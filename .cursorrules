@@ -55,6 +55,30 @@ await context.SaveChangesAsync();
 - Functions defined in `wwwroot/js/app.js`
 - Called via `IJSRuntime.InvokeVoidAsync` or `InvokeAsync<T>`
 
+### Barcode/Inventory Number Scanning
+- `BarcodeScannerModal.razor` - scans inventory numbers (not separate barcodes)
+- UI labels use "Инвентарный номер" / "инв. номер" terminology
+- Searches equipment by `Barcode` field (which equals `SerialNumber`)
+
+## Key Business Logic
+
+### Inventory Number (Инвентарный номер)
+- The `SerialNumber` field is used as the inventory number ("Инвентарный номер" in UI)
+- The inventory number is also used as the barcode - no separate barcode generation
+- When creating/updating equipment, `Barcode` is set from `SerialNumber`
+- This field is required and validated in `EquipmentFormModal.razor`
+
+### Field Name Mappings (Code → UI)
+- `SerialNumber` → "Инвентарный номер" (not "Серийный номер")
+- `PurchaseDate` → "Дата добавления" (not "Дата покупки")
+- `Barcode` → "Инв. номер" (for printing/scanning)
+
+### Equipment List Sorting
+- All columns in `Home.razor` are sortable (click header to toggle asc/desc)
+- Uses `SortDirection` enum and `currentSortColumn` state
+- Sorting is applied client-side in `LoadEquipment()` method
+- Sort icon SVGs indicate current sort direction
+
 ## Testing
 - Run: `dotnet run` from project root
 - Database auto-creates on first run
