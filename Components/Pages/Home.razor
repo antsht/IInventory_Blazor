@@ -1,0 +1,213 @@
+﻿@page "/"
+@using InventoryApp.Models
+@using InventoryApp.Services
+@inject EquipmentService EquipmentService
+@inject BarcodeService BarcodeService
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Каталог оборудования</PageTitle>
+
+<div class="page-header">
+    <h2>Управление оборудованием</h2>
+    <button class="btn btn-primary" @onclick="OpenAddForm">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Добавить оборудование
+    </button>
+</div>
+
+<div class="card">
+    <div class="filters">
+        <input type="text" 
+               class="form-control search-input" 
+               placeholder="Поиск по названию, штрихкоду, модели..." 
+               @bind="searchTerm" 
+               @bind:event="oninput"
+               @onkeyup="OnSearchKeyUp" />
+        <select class="form-control type-filter" @bind="typeFilter" @bind:after="LoadEquipment">
+            <option value="all">Все типы</option>
+            @foreach (var type in EquipmentTypes.All)
+            {
+                <option value="@type.Key">@type.Value</option>
+            }
+        </select>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading">Загрузка...</div>
+    }
+    else
+    {
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th>Тип</th>
+                        <th>Модель</th>
+                        <th>Штрихкод</th>
+                        <th>Местоположение</th>
+                        <th>Статус</th>
+                        <th class="actions-col">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!equipment.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="empty-message">Оборудование не найдено</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in equipment)
+                        {
+                            <tr>
+                                <td>@item.Name</td>
+                                <td>@GetTypeName(item.Type)</td>
+                                <td>@item.Model</td>
+                                <td class="barcode">@item.Barcode</td>
+                                <td>@item.Location</td>
+                                <td>
+                                    <span class="status-badge status-@item.Status">
+                                        @GetStatusName(item.Status)
+                                    </span>
+                                </td>
+                                <td class="actions-col">
+                                    <div class="actions">
+                                        <button class="btn-icon btn-print" title="Печать штрихкода" @onclick="() => PrintBarcode(item)">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                                <rect x="6" y="14" width="12" height="8"></rect>
+                                            </svg>
+                                        </button>
+                                        <button class="btn-icon btn-edit" title="Редактировать" @onclick="() => OpenEditForm(item)">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                            </svg>
+                                        </button>
+                                        <button class="btn-icon btn-delete" title="Удалить" @onclick="() => DeleteEquipment(item)">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (showForm)
+{
+    <EquipmentFormModal Equipment="editingEquipment" 
+                        OnClose="CloseForm" 
+                        OnSaved="OnEquipmentSaved" />
+}
+
+@code {
+    private List<Equipment> equipment = new();
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private string typeFilter = "all";
+    private bool showForm = false;
+    private Equipment? editingEquipment = null;
+    private System.Timers.Timer? searchTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEquipment();
+    }
+
+    private async Task LoadEquipment()
+    {
+        isLoading = true;
+        equipment = await EquipmentService.SearchAsync(searchTerm, typeFilter);
+        isLoading = false;
+    }
+
+    private void OnSearchKeyUp()
+    {
+        searchTimer?.Stop();
+        searchTimer?.Dispose();
+        searchTimer = new System.Timers.Timer(300);
+        searchTimer.Elapsed += async (sender, e) =>
+        {
+            searchTimer?.Stop();
+            await InvokeAsync(async () =>
+            {
+                await LoadEquipment();
+                StateHasChanged();
+            });
+        };
+        searchTimer.Start();
+    }
+
+    private void OpenAddForm()
+    {
+        editingEquipment = null;
+        showForm = true;
+    }
+
+    private void OpenEditForm(Equipment item)
+    {
+        editingEquipment = item;
+        showForm = true;
+    }
+
+    private void CloseForm()
+    {
+        showForm = false;
+        editingEquipment = null;
+    }
+
+    private async Task OnEquipmentSaved()
+    {
+        showForm = false;
+        editingEquipment = null;
+        await LoadEquipment();
+    }
+
+    private async Task DeleteEquipment(Equipment item)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Удалить оборудование?");
+        if (confirmed)
+        {
+            await EquipmentService.DeleteAsync(item.Id);
+            await LoadEquipment();
+        }
+    }
+
+    private async Task PrintBarcode(Equipment item)
+    {
+        var html = BarcodeService.GenerateBarcodeHtml(
+            item.Barcode, 
+            item.Name, 
+            GetTypeName(item.Type), 
+            item.Model, 
+            item.Location, 
+            item.AssignedTo);
+        
+        await JSRuntime.InvokeVoidAsync("printBarcode", html);
+    }
+
+    private string GetTypeName(string type) => EquipmentTypes.All.GetValueOrDefault(type, type);
+    private string GetStatusName(string status) => EquipmentStatuses.All.GetValueOrDefault(status, status);
+
+    public void Dispose()
+    {
+        searchTimer?.Stop();
+        searchTimer?.Dispose();
+    }
+}

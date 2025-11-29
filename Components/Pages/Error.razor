@@ -1,0 +1,37 @@
+﻿@page "/Error"
+@using System.Diagnostics
+
+<PageTitle>Ошибка</PageTitle>
+
+<div class="card" style="max-width: 600px; margin: 2rem auto;">
+    <h1 class="card-title" style="color: var(--danger-600);">Ошибка</h1>
+    <p>Произошла ошибка при обработке вашего запроса.</p>
+
+    @if (ShowRequestId)
+    {
+        <p>
+            <strong>Request ID:</strong> <code>@RequestId</code>
+        </p>
+    }
+
+    <h2 style="font-size: 1.125rem; margin-top: 1.5rem;">Разработка</h2>
+    <p>
+        Переключитесь на страницу исключений в режиме разработки, чтобы увидеть детали.
+        Для локальных запросов режим разработки позволяет просматривать подробную информацию об ошибках.
+    </p>
+    <p>
+        <strong>Не включайте страницу исключений в продакшене.</strong>
+        Это может раскрыть конфиденциальную информацию.
+    </p>
+</div>
+
+@code {
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    public string? RequestId { get; set; }
+    public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized() =>
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}

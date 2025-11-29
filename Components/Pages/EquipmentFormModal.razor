@@ -1,0 +1,194 @@
+@using InventoryApp.Models
+@using InventoryApp.Services
+@inject EquipmentService EquipmentService
+
+<div class="modal-overlay" @onclick="OnClose">
+    <div class="modal-content" @onclick:stopPropagation="true">
+        <div class="modal-header">
+            <h2>@(Equipment == null ? "Добавить оборудование" : "Редактировать оборудование")</h2>
+            <button class="btn-close" @onclick="OnClose">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <EditForm Model="formData" OnValidSubmit="HandleSubmit" class="modal-body">
+            <DataAnnotationsValidator />
+
+            <div class="form-group">
+                <label class="form-label">Название *</label>
+                <InputText class="form-control" @bind-Value="formData.Name" placeholder="Например: Компьютер Dell Optiplex" />
+                <ValidationMessage For="@(() => formData.Name)" />
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Тип *</label>
+                    <InputSelect class="form-control" @bind-Value="formData.Type">
+                        @foreach (var type in EquipmentTypes.All)
+                        {
+                            <option value="@type.Key">@type.Value</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Статус *</label>
+                    <InputSelect class="form-control" @bind-Value="formData.Status">
+                        @foreach (var status in EquipmentStatuses.All)
+                        {
+                            <option value="@status.Key">@status.Value</option>
+                        }
+                    </InputSelect>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Производитель</label>
+                    <InputText class="form-control" @bind-Value="formData.Manufacturer" placeholder="Dell, HP, Lenovo..." />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Модель</label>
+                    <InputText class="form-control" @bind-Value="formData.Model" placeholder="Optiplex 7010" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Серийный номер</label>
+                    <InputText class="form-control" @bind-Value="formData.SerialNumber" placeholder="SN123456789" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Дата покупки</label>
+                    <InputDate class="form-control" @bind-Value="formData.PurchaseDate" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Местоположение</label>
+                    <InputText class="form-control" @bind-Value="formData.Location" placeholder="Кабинет 101, Этаж 2" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Назначено на</label>
+                    <InputText class="form-control" @bind-Value="formData.AssignedTo" placeholder="Иванов И.И." />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Примечания</label>
+                <InputTextArea class="form-control" @bind-Value="formData.Notes" rows="3" placeholder="Дополнительная информация..." />
+            </div>
+
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                    @(isSaving ? "Сохранение..." : "Сохранить")
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="OnClose">
+                    Отмена
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Equipment? Equipment { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private EquipmentFormData formData = new();
+    private bool isSaving = false;
+
+    protected override void OnParametersSet()
+    {
+        if (Equipment != null)
+        {
+            formData = new EquipmentFormData
+            {
+                Name = Equipment.Name,
+                Type = Equipment.Type,
+                Manufacturer = Equipment.Manufacturer,
+                Model = Equipment.Model,
+                SerialNumber = Equipment.SerialNumber,
+                PurchaseDate = Equipment.PurchaseDate?.ToDateTime(TimeOnly.MinValue),
+                Status = Equipment.Status,
+                Location = Equipment.Location,
+                AssignedTo = Equipment.AssignedTo,
+                Notes = Equipment.Notes
+            };
+        }
+        else
+        {
+            formData = new EquipmentFormData();
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        isSaving = true;
+
+        try
+        {
+            var equipment = new Equipment
+            {
+                Id = Equipment?.Id ?? Guid.Empty,
+                Barcode = Equipment?.Barcode ?? "",
+                Name = formData.Name,
+                Type = formData.Type,
+                Manufacturer = formData.Manufacturer,
+                Model = formData.Model,
+                SerialNumber = formData.SerialNumber,
+                PurchaseDate = formData.PurchaseDate.HasValue 
+                    ? DateOnly.FromDateTime(formData.PurchaseDate.Value) 
+                    : null,
+                Status = formData.Status,
+                Location = formData.Location,
+                AssignedTo = formData.AssignedTo,
+                Notes = formData.Notes
+            };
+
+            if (Equipment == null)
+            {
+                await EquipmentService.CreateAsync(equipment);
+            }
+            else
+            {
+                await EquipmentService.UpdateAsync(equipment);
+            }
+
+            await OnSaved.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving equipment: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private class EquipmentFormData
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Название обязательно")]
+        public string Name { get; set; } = "";
+        public string Type { get; set; } = "PC";
+        public string Manufacturer { get; set; } = "";
+        public string Model { get; set; } = "";
+        public string SerialNumber { get; set; } = "";
+        public DateTime? PurchaseDate { get; set; }
+        public string Status { get; set; } = "active";
+        public string Location { get; set; } = "";
+        public string AssignedTo { get; set; } = "";
+        public string Notes { get; set; } = "";
+    }
+}
+
+

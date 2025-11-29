@@ -1,0 +1,62 @@
+# IInventory_Blazor Project Rules
+
+## Project Overview
+Equipment Inventory Management System built with Blazor Server (.NET 9.0) and SQLite.
+Russian language UI for IT equipment tracking and inventory audits.
+
+## Code Patterns
+
+### Blazor Server Components
+- Always use `@rendermode InteractiveServer` for interactive pages
+- Use `IDbContextFactory<ApplicationDbContext>` instead of injecting `DbContext` directly
+- Services are registered as Scoped in Program.cs
+- Use `async/await` pattern for all database operations
+
+### Database Operations Pattern
+```csharp
+using var context = await _contextFactory.CreateDbContextAsync();
+// ... perform operations
+await context.SaveChangesAsync();
+```
+
+### Component Communication
+- Use `[Parameter]` for parent-to-child data
+- Use `EventCallback` for child-to-parent notifications
+- Modal components use `OnClose` and `OnSaved` callbacks
+
+### Naming Conventions
+- Russian display names in static dictionaries (EquipmentTypes, EquipmentStatuses)
+- English code identifiers
+- Database status values in lowercase English (e.g., "active", "in_progress")
+
+### CSS Patterns
+- Use CSS variables defined in `app.css` (e.g., `var(--primary-600)`)
+- Status badges use `.status-{statusvalue}` classes
+- Icons are inline SVGs for consistency
+
+## File Structure
+- `/Components/Pages/` - Routable page components
+- `/Components/Layout/` - Layout components
+- `/Services/` - Business logic services
+- `/Models/` - Entity models and static lookups
+- `/Data/` - DbContext
+- `/wwwroot/js/` - JavaScript interop functions
+
+## Common Tasks
+
+### Adding New Equipment Type
+1. Add to `EquipmentTypes.All` dictionary in `Models/Equipment.cs`
+
+### Adding New Equipment Status
+1. Add to `EquipmentStatuses.All` dictionary in `Models/Equipment.cs`
+2. Add CSS class `.status-{newstatus}` in `wwwroot/app.css`
+
+### JavaScript Interop
+- Functions defined in `wwwroot/js/app.js`
+- Called via `IJSRuntime.InvokeVoidAsync` or `InvokeAsync<T>`
+
+## Testing
+- Run: `dotnet run` from project root
+- Database auto-creates on first run
+- Default URLs in `Properties/launchSettings.json`
+
