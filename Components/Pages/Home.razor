@@ -23,7 +23,7 @@
     <div class="filters">
         <input type="text" 
                class="form-control search-input" 
-               placeholder="Поиск по названию, штрихкоду, модели..." 
+               placeholder="Поиск по названию, инв. номеру, модели, месту, сотруднику..." 
                @bind="searchTerm" 
                @bind:event="oninput"
                @onkeyup="OnSearchKeyUp" />
@@ -43,15 +43,41 @@
     else
     {
         <div class="table-container">
-            <table class="data-table">
+            <table class="data-table sortable-table">
                 <thead>
                     <tr>
-                        <th>Название</th>
-                        <th>Тип</th>
-                        <th>Модель</th>
-                        <th>Штрихкод</th>
-                        <th>Местоположение</th>
-                        <th>Статус</th>
+                        <th class="sortable @GetSortClass("Name")" @onclick='() => SortBy("Name")'>
+                            Название
+                            @RenderSortIcon("Name")
+                        </th>
+                        <th class="sortable @GetSortClass("Type")" @onclick='() => SortBy("Type")'>
+                            Тип
+                            @RenderSortIcon("Type")
+                        </th>
+                        <th class="sortable @GetSortClass("Model")" @onclick='() => SortBy("Model")'>
+                            Модель
+                            @RenderSortIcon("Model")
+                        </th>
+                        <th class="sortable @GetSortClass("Barcode")" @onclick='() => SortBy("Barcode")'>
+                            Инв. номер
+                            @RenderSortIcon("Barcode")
+                        </th>
+                        <th class="sortable @GetSortClass("PurchaseDate")" @onclick='() => SortBy("PurchaseDate")'>
+                            Дата добавления
+                            @RenderSortIcon("PurchaseDate")
+                        </th>
+                        <th class="sortable @GetSortClass("Workplace")" @onclick='() => SortBy("Workplace")'>
+                            Рабочее место
+                            @RenderSortIcon("Workplace")
+                        </th>
+                        <th class="sortable @GetSortClass("Employee")" @onclick='() => SortBy("Employee")'>
+                            Сотрудник
+                            @RenderSortIcon("Employee")
+                        </th>
+                        <th class="sortable @GetSortClass("Status")" @onclick='() => SortBy("Status")'>
+                            Статус
+                            @RenderSortIcon("Status")
+                        </th>
                         <th>Примечания</th>
                         <th class="actions-col">Действия</th>
                     </tr>
@@ -60,25 +86,27 @@
                     @if (!equipment.Any())
                     {
                         <tr>
-                            <td colspan="8" class="empty-message">Оборудование не найдено</td>
+                            <td colspan="10" class="empty-message">Оборудование не найдено</td>
                         </tr>
                     }
                     else
                     {
-                        @foreach (var item in equipment)
+                        @foreach (var item in GetSortedEquipment())
                         {
                             <tr>
                                 <td>@item.Name</td>
                                 <td>@GetTypeName(item.Type)</td>
                                 <td>@item.Model</td>
                                 <td class="barcode">@item.Barcode</td>
-                                <td>@item.Location</td>
+                                <td class="date-cell">@(item.PurchaseDate?.ToString("dd.MM.yyyy") ?? "—")</td>
+                                <td>@(item.Workplace?.Name ?? "—")</td>
+                                <td>@(item.Employee?.FullName ?? "—")</td>
                                 <td>
                                     <span class="status-badge status-@item.Status">
                                         @GetStatusName(item.Status)
                                     </span>
                                 </td>
-                                <td class="notes-cell">@item.Notes</td>
+                                <td class="notes-cell" title="@item.Notes">@item.Notes</td>
                                 <td class="actions-col">
                                     <div class="actions">
                                         <button class="btn-icon btn-split" title="Разделить (создать копию для другого места)" @onclick="() => SplitEquipment(item)">
@@ -89,7 +117,7 @@
                                                 <path d="m15 9 6-6"></path>
                                             </svg>
                                         </button>
-                                        <button class="btn-icon btn-print" title="Печать штрихкода" @onclick="() => PrintBarcode(item)">
+                                        <button class="btn-icon btn-print" title="Печать инв. номера" @onclick="() => PrintBarcode(item)">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <polyline points="6 9 6 2 18 2 18 9"></polyline>
                                                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
@@ -158,6 +186,10 @@
     private bool showForm = false;
     private Equipment? editingEquipment = null;
     private System.Timers.Timer? searchTimer;
+    
+    // Sorting state
+    private string sortColumn = "Name";
+    private bool sortAscending = true;
     
     // Confirm modals state
     private bool showDeleteConfirm = false;
@@ -267,19 +299,89 @@
 
     private async Task PrintBarcode(Equipment item)
     {
+        var location = item.Workplace?.Name ?? "";
+        var assignedTo = item.Employee?.FullName ?? "";
+        
         var html = BarcodeService.GenerateBarcodeHtml(
             item.Barcode, 
             item.Name, 
             GetTypeName(item.Type), 
             item.Model, 
-            item.Location, 
-            item.AssignedTo);
+            location, 
+            assignedTo);
         
         await JSRuntime.InvokeVoidAsync("printBarcode", html);
     }
 
     private string GetTypeName(string type) => EquipmentTypes.All.GetValueOrDefault(type, type);
     private string GetStatusName(string status) => EquipmentStatuses.All.GetValueOrDefault(status, status);
+
+    // Sorting methods
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+    }
+
+    private string GetSortClass(string column)
+    {
+        if (sortColumn != column) return "";
+        return sortAscending ? "sort-asc" : "sort-desc";
+    }
+
+    private IEnumerable<Equipment> GetSortedEquipment()
+    {
+        var query = equipment.AsEnumerable();
+        
+        query = sortColumn switch
+        {
+            "Name" => sortAscending ? query.OrderBy(e => e.Name) : query.OrderByDescending(e => e.Name),
+            "Type" => sortAscending ? query.OrderBy(e => GetTypeName(e.Type)) : query.OrderByDescending(e => GetTypeName(e.Type)),
+            "Model" => sortAscending ? query.OrderBy(e => e.Model) : query.OrderByDescending(e => e.Model),
+            "Barcode" => sortAscending ? query.OrderBy(e => e.Barcode) : query.OrderByDescending(e => e.Barcode),
+            "PurchaseDate" => sortAscending ? query.OrderBy(e => e.PurchaseDate) : query.OrderByDescending(e => e.PurchaseDate),
+            "Workplace" => sortAscending ? query.OrderBy(e => e.Workplace?.Name ?? "") : query.OrderByDescending(e => e.Workplace?.Name ?? ""),
+            "Employee" => sortAscending ? query.OrderBy(e => e.Employee?.FullName ?? "") : query.OrderByDescending(e => e.Employee?.FullName ?? ""),
+            "Status" => sortAscending ? query.OrderBy(e => GetStatusName(e.Status)) : query.OrderByDescending(e => GetStatusName(e.Status)),
+            _ => query
+        };
+        
+        return query;
+    }
+
+    private RenderFragment RenderSortIcon(string column) => builder =>
+    {
+        if (sortColumn != column) return;
+        
+        builder.OpenElement(0, "svg");
+        builder.AddAttribute(1, "class", "sort-icon");
+        builder.AddAttribute(2, "viewBox", "0 0 24 24");
+        builder.AddAttribute(3, "fill", "none");
+        builder.AddAttribute(4, "stroke", "currentColor");
+        builder.AddAttribute(5, "stroke-width", "2");
+        
+        if (sortAscending)
+        {
+            builder.OpenElement(6, "polyline");
+            builder.AddAttribute(7, "points", "18 15 12 9 6 15");
+            builder.CloseElement();
+        }
+        else
+        {
+            builder.OpenElement(6, "polyline");
+            builder.AddAttribute(7, "points", "6 9 12 15 18 9");
+            builder.CloseElement();
+        }
+        
+        builder.CloseElement();
+    };
 
     public void Dispose()
     {

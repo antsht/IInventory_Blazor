@@ -128,7 +128,7 @@ else
                         <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
                         <rect x="7" y="7" width="10" height="10"></rect>
                     </svg>
-                    Сканировать штрихкод
+                    Сканировать инв. номер
                 </button>
                 <button class="btn btn-success" @onclick="CompleteAudit">
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -237,9 +237,9 @@ else
                                 <div class="item-main">
                                     <p class="item-name">@eq.Name</p>
                                     <p class="item-details">@GetTypeName(eq.Type) - @eq.Model</p>
-                                    @if (!string.IsNullOrEmpty(eq.Location))
+                                    @if (eq.Workplace != null)
                                     {
-                                        <p class="item-location">Местоположение: @eq.Location</p>
+                                        <p class="item-location">Рабочее место: @eq.Workplace.Name</p>
                                     }
                                     <p class="item-barcode">@eq.Barcode</p>
                                 </div>

@@ -956,3 +956,36 @@ html, body {
     background: var(--warning-600);
     box-shadow: var(--shadow-md);
 }
+
+/* Sortable Table */
+.sortable-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+
+.sortable-table th.sortable:hover {
+    background: var(--gray-100);
+    color: var(--primary-600);
+}
+
+.sortable-table th.sortable.sort-asc,
+.sortable-table th.sortable.sort-desc {
+    background: var(--primary-50);
+    color: var(--primary-700);
+}
+
+.sort-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 0.25rem;
+}
+
+.date-cell {
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    color: var(--gray-600);
+}

@@ -20,6 +20,8 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
 builder.Services.AddScoped<BarcodeService>();
 builder.Services.AddScoped<EquipmentService>();
 builder.Services.AddScoped<AuditService>();
+builder.Services.AddScoped<EmployeeService>();
+builder.Services.AddScoped<WorkplaceService>();
 
 var app = builder.Build();
 

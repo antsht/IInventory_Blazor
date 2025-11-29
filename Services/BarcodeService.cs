@@ -9,9 +9,9 @@ public class BarcodeService
         return $"EQ-{timestamp[^8..]}-{random}";
     }
 
-    public string GenerateBarcodeHtml(string barcode, string name, string type, string model, string location, string assignedTo)
+    public string GenerateBarcodeHtml(string inventoryNumber, string name, string type, string model, string location, string assignedTo)
     {
-        var binaryString = string.Join("", barcode.Select(c => Convert.ToString(c, 2).PadLeft(8, '0')));
+        var binaryString = string.Join("", inventoryNumber.Select(c => Convert.ToString(c, 2).PadLeft(8, '0')));
         var bars = new System.Text.StringBuilder();
         
         const int barWidth = 2;
@@ -31,7 +31,7 @@ public class BarcodeService
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Штрихкод - {name}</title>
+    <title>Инвентарный номер - {name}</title>
     <style>
         body {{
             margin: 0;
@@ -59,8 +59,9 @@ public class BarcodeService
         <p>{type} - {model}</p>
         <svg width=""{svgWidth}"" height=""{height + 30}"" xmlns=""http://www.w3.org/2000/svg"">
             {bars}
-            <text x=""{svgWidth / 2}"" y=""{height + 20}"" text-anchor=""middle"" font-family=""monospace"" font-size=""14"">{barcode}</text>
+            <text x=""{svgWidth / 2}"" y=""{height + 20}"" text-anchor=""middle"" font-family=""monospace"" font-size=""14"">{inventoryNumber}</text>
         </svg>
+        <p><strong>Инвентарный №:</strong> {inventoryNumber}</p>
         <p><strong>Местоположение:</strong> {(string.IsNullOrEmpty(location) ? "Не указано" : location)}</p>
         <p><strong>Назначено:</strong> {(string.IsNullOrEmpty(assignedTo) ? "Не назначено" : assignedTo)}</p>
     </div>

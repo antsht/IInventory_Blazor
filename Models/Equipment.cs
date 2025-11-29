@@ -33,11 +33,11 @@ public class Equipment
     [MaxLength(20)]
     public string Status { get; set; } = "active";
 
-    [MaxLength(200)]
-    public string Location { get; set; } = string.Empty;
+    // Foreign key to Workplace
+    public Guid? WorkplaceId { get; set; }
 
-    [MaxLength(200)]
-    public string AssignedTo { get; set; } = string.Empty;
+    // Foreign key to Employee (can be different from Workplace.EmployeeId)
+    public Guid? EmployeeId { get; set; }
 
     [MaxLength(1000)]
     public string Notes { get; set; } = string.Empty;
@@ -46,7 +46,10 @@ public class Equipment
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    public ICollection<AuditItem> AuditItems { get; set; } = new List<AuditItem>();
+    // Navigation properties
+    public Workplace? Workplace { get; set; }
+    public Employee? Employee { get; set; }
+    public ICollection<AuditItem> AuditItems { get; set; } = [];
 }
 
 public static class EquipmentTypes
@@ -75,5 +78,3 @@ public static class EquipmentStatuses
         { "disposed", "Списано" }
     };
 }
-
-

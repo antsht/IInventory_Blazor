@@ -13,6 +13,8 @@ public class EquipmentService(IDbContextFactory<ApplicationDbContext> contextFac
     {
         using var context = await _contextFactory.CreateDbContextAsync();
         return await context.Equipment
+            .Include(e => e.Workplace)
+            .Include(e => e.Employee)
             .OrderByDescending(e => e.CreatedAt)
             .ToListAsync();
     }
@@ -20,20 +22,26 @@ public class EquipmentService(IDbContextFactory<ApplicationDbContext> contextFac
     public async Task<Equipment?> GetByIdAsync(Guid id)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Equipment.FindAsync(id);
+        return await context.Equipment
+            .Include(e => e.Workplace)
+            .Include(e => e.Employee)
+            .FirstOrDefaultAsync(e => e.Id == id);
     }
 
     public async Task<Equipment?> GetByBarcodeAsync(string barcode)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Equipment.FirstOrDefaultAsync(e => e.Barcode == barcode);
+        return await context.Equipment
+            .Include(e => e.Workplace)
+            .Include(e => e.Employee)
+            .FirstOrDefaultAsync(e => e.Barcode == barcode);
     }
 
     public async Task<Equipment> CreateAsync(Equipment equipment)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
         equipment.Id = Guid.NewGuid();
-        equipment.Barcode = _barcodeService.GenerateBarcode();
+        // Barcode is now the user-entered inventory number
         equipment.CreatedAt = DateTime.UtcNow;
         equipment.UpdatedAt = DateTime.UtcNow;
 
@@ -49,6 +57,7 @@ public class EquipmentService(IDbContextFactory<ApplicationDbContext> contextFac
         var existing = await context.Equipment.FindAsync(equipment.Id);
         if (existing == null) return null;
 
+        existing.Barcode = equipment.Barcode;
         existing.Name = equipment.Name;
         existing.Type = equipment.Type;
         existing.Manufacturer = equipment.Manufacturer;
@@ -56,8 +65,8 @@ public class EquipmentService(IDbContextFactory<ApplicationDbContext> contextFac
         existing.SerialNumber = equipment.SerialNumber;
         existing.PurchaseDate = equipment.PurchaseDate;
         existing.Status = equipment.Status;
-        existing.Location = equipment.Location;
-        existing.AssignedTo = equipment.AssignedTo;
+        existing.WorkplaceId = equipment.WorkplaceId;
+        existing.EmployeeId = equipment.EmployeeId;
         existing.Notes = equipment.Notes;
         existing.UpdatedAt = DateTime.UtcNow;
 
@@ -79,16 +88,21 @@ public class EquipmentService(IDbContextFactory<ApplicationDbContext> contextFac
     public async Task<List<Equipment>> SearchAsync(string? searchTerm, string? typeFilter)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        var query = context.Equipment.AsQueryable();
+        var query = context.Equipment
+            .Include(e => e.Workplace)
+            .Include(e => e.Employee)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var term = searchTerm.ToLower();
             query = query.Where(e =>
-                e.Name.Contains(term, StringComparison.CurrentCultureIgnoreCase) ||
-                e.Barcode.Contains(term, StringComparison.CurrentCultureIgnoreCase) ||
-                e.Model.Contains(term, StringComparison.CurrentCultureIgnoreCase) ||
-                e.SerialNumber.Contains(term, StringComparison.CurrentCultureIgnoreCase));
+                e.Name.ToLower().Contains(term) ||
+                e.Barcode.ToLower().Contains(term) ||
+                e.Model.ToLower().Contains(term) ||
+                e.SerialNumber.ToLower().Contains(term) ||
+                (e.Workplace != null && e.Workplace.Name.ToLower().Contains(term)) ||
+                (e.Employee != null && e.Employee.FullName.ToLower().Contains(term)));
         }
 
         if (!string.IsNullOrWhiteSpace(typeFilter) && typeFilter != "all")
@@ -108,7 +122,7 @@ public class EquipmentService(IDbContextFactory<ApplicationDbContext> contextFac
         var duplicate = new Equipment
         {
             Id = Guid.NewGuid(),
-            Barcode = original.Barcode, // Сохраняем тот же инвентарный номер
+            Barcode = original.Barcode,
             Name = original.Name,
             Type = original.Type,
             Manufacturer = original.Manufacturer,
@@ -116,8 +130,8 @@ public class EquipmentService(IDbContextFactory<ApplicationDbContext> contextFac
             SerialNumber = original.SerialNumber,
             PurchaseDate = original.PurchaseDate,
             Status = original.Status,
-            Location = original.Location,
-            AssignedTo = original.AssignedTo,
+            WorkplaceId = original.WorkplaceId,
+            EmployeeId = original.EmployeeId,
             Notes = string.IsNullOrEmpty(original.Notes) 
                 ? "(Разделено)" 
                 : $"{original.Notes} (Разделено)",
@@ -131,5 +145,3 @@ public class EquipmentService(IDbContextFactory<ApplicationDbContext> contextFac
         return duplicate;
     }
 }
-
-

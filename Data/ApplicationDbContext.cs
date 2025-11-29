@@ -3,29 +3,58 @@ using InventoryApp.Models;
 
 namespace InventoryApp.Data;
 
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
-    {
-    }
-
     public DbSet<Equipment> Equipment { get; set; } = null!;
     public DbSet<InventoryAudit> InventoryAudits { get; set; } = null!;
     public DbSet<AuditItem> AuditItems { get; set; } = null!;
+    public DbSet<Employee> Employees { get; set; } = null!;
+    public DbSet<Workplace> Workplaces { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
+        // Employee configuration
+        modelBuilder.Entity<Employee>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FullName).IsRequired();
+            entity.HasIndex(e => e.FullName);
+        });
+
+        // Workplace configuration
+        modelBuilder.Entity<Workplace>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired();
+            entity.HasIndex(e => e.Name);
+
+            entity.HasOne(w => w.Employee)
+                .WithMany(e => e.Workplaces)
+                .HasForeignKey(w => w.EmployeeId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
         // Equipment configuration
         modelBuilder.Entity<Equipment>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Barcode); // Не уникальный - один инв. номер может быть у нескольких частей оборудования
+            entity.HasIndex(e => e.Barcode);
             entity.Property(e => e.Barcode).IsRequired();
             entity.Property(e => e.Name).IsRequired();
             entity.Property(e => e.Type).IsRequired().HasDefaultValue("PC");
             entity.Property(e => e.Status).IsRequired().HasDefaultValue("active");
+
+            entity.HasOne(eq => eq.Workplace)
+                .WithMany(w => w.Equipment)
+                .HasForeignKey(eq => eq.WorkplaceId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(eq => eq.Employee)
+                .WithMany(e => e.Equipment)
+                .HasForeignKey(eq => eq.EmployeeId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // InventoryAudit configuration
@@ -56,5 +85,3 @@ public class ApplicationDbContext : DbContext
         });
     }
 }
-
-

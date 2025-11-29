@@ -1,0 +1,389 @@
+@using InventoryApp.Models
+@using InventoryApp.Services
+@inject EmployeeService EmployeeService
+
+<div class="modal-overlay" @onclick="OnClose">
+    <div class="modal-content modal-lg" @onclick:stopPropagation="true">
+        <div class="modal-header">
+            <h2>Справочник сотрудников</h2>
+            <button class="btn-close" @onclick="OnClose">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <div class="modal-body">
+            @if (isEditing)
+            {
+                <div class="employee-form">
+                    <h3 class="form-section-title">@(isNewEmployee ? "Новый сотрудник" : "Редактирование сотрудника")</h3>
+                    
+                    <div class="form-group">
+                        <label class="form-label">ФИО *</label>
+                        <input class="form-control" @bind="editingEmployee!.FullName" placeholder="Иванов Иван Иванович" />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Должность</label>
+                            <input class="form-control" @bind="editingEmployee.Position" placeholder="Менеджер" />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Отдел</label>
+                            <input class="form-control" @bind="editingEmployee.Department" placeholder="IT отдел" />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input class="form-control" type="email" @bind="editingEmployee.Email" placeholder="ivanov@company.ru" />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Телефон</label>
+                            <input class="form-control" @bind="editingEmployee.Phone" placeholder="+7 (999) 123-45-67" />
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn btn-primary" @onclick="SaveEmployee" disabled="@(string.IsNullOrWhiteSpace(editingEmployee.FullName))">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                <polyline points="7 3 7 8 15 8"></polyline>
+                            </svg>
+                            Сохранить
+                        </button>
+                        <button class="btn btn-secondary" @onclick="CancelEdit">
+                            Отмена
+                        </button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="toolbar">
+                    <input class="form-control search-input" 
+                           placeholder="Поиск сотрудника..." 
+                           @bind="searchTerm" 
+                           @bind:event="oninput"
+                           @onkeyup="SearchEmployees" />
+                    <button class="btn btn-primary" @onclick="AddNewEmployee">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Добавить
+                    </button>
+                </div>
+
+                @if (isLoading)
+                {
+                    <div class="loading">Загрузка...</div>
+                }
+                else if (employees.Count == 0)
+                {
+                    <div class="empty-state">
+                        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <p>Сотрудники не найдены</p>
+                        <button class="btn btn-primary btn-sm" @onclick="AddNewEmployee">Добавить первого сотрудника</button>
+                    </div>
+                }
+                else
+                {
+                    <div class="employee-list">
+                        @foreach (var employee in employees)
+                        {
+                            <div class="employee-item @(SelectMode && SelectedEmployeeId == employee.Id ? "selected" : "")"
+                                 @onclick="() => SelectEmployee(employee)">
+                                <div class="employee-info">
+                                    <div class="employee-name">@employee.FullName</div>
+                                    <div class="employee-details">
+                                        @if (!string.IsNullOrEmpty(employee.Position))
+                                        {
+                                            <span>@employee.Position</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(employee.Department))
+                                        {
+                                            <span>• @employee.Department</span>
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(employee.Email) || !string.IsNullOrEmpty(employee.Phone))
+                                    {
+                                        <div class="employee-contact">
+                                            @if (!string.IsNullOrEmpty(employee.Email))
+                                            {
+                                                <span>@employee.Email</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(employee.Phone))
+                                            {
+                                                <span>@employee.Phone</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                                <div class="employee-actions">
+                                    @if (SelectMode)
+                                    {
+                                        <button class="btn btn-sm btn-success" @onclick:stopPropagation="true" @onclick="() => ConfirmSelection(employee)">
+                                            Выбрать
+                                        </button>
+                                    }
+                                    <button class="btn-icon btn-edit" title="Редактировать" @onclick:stopPropagation="true" @onclick="() => EditEmployee(employee)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="btn-icon btn-delete" title="Удалить" @onclick:stopPropagation="true" @onclick="() => DeleteEmployee(employee)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<Employee> OnSelected { get; set; }
+    [Parameter] public bool SelectMode { get; set; } = false;
+    [Parameter] public Guid? SelectedEmployeeId { get; set; }
+
+    private List<Employee> employees = new();
+    private string searchTerm = "";
+    private bool isLoading = true;
+    private bool isEditing = false;
+    private Employee? editingEmployee;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEmployees();
+    }
+
+    private async Task LoadEmployees()
+    {
+        isLoading = true;
+        employees = await EmployeeService.GetAllAsync();
+        isLoading = false;
+    }
+
+    private async Task SearchEmployees()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            await LoadEmployees();
+        }
+        else
+        {
+            employees = await EmployeeService.SearchAsync(searchTerm);
+        }
+    }
+
+    private bool isNewEmployee = false;
+
+    private void AddNewEmployee()
+    {
+        editingEmployee = new Employee { Id = Guid.Empty };
+        isNewEmployee = true;
+        isEditing = true;
+    }
+
+    private void EditEmployee(Employee employee)
+    {
+        editingEmployee = new Employee
+        {
+            Id = employee.Id,
+            FullName = employee.FullName,
+            Position = employee.Position,
+            Department = employee.Department,
+            Email = employee.Email,
+            Phone = employee.Phone,
+            IsActive = employee.IsActive
+        };
+        isNewEmployee = false;
+        isEditing = true;
+    }
+
+    private async Task SaveEmployee()
+    {
+        if (editingEmployee == null || string.IsNullOrWhiteSpace(editingEmployee.FullName))
+            return;
+
+        if (isNewEmployee)
+        {
+            await EmployeeService.CreateAsync(editingEmployee);
+        }
+        else
+        {
+            await EmployeeService.UpdateAsync(editingEmployee);
+        }
+
+        isEditing = false;
+        editingEmployee = null;
+        await LoadEmployees();
+    }
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+        isNewEmployee = false;
+        editingEmployee = null;
+    }
+
+    private async Task DeleteEmployee(Employee employee)
+    {
+        await EmployeeService.DeleteAsync(employee.Id);
+        await LoadEmployees();
+    }
+
+    private void SelectEmployee(Employee employee)
+    {
+        if (SelectMode)
+        {
+            SelectedEmployeeId = employee.Id;
+        }
+    }
+
+    private async Task ConfirmSelection(Employee employee)
+    {
+        await OnSelected.InvokeAsync(employee);
+    }
+}
+
+<style>
+    .modal-lg {
+        max-width: 56rem;
+    }
+
+    .form-section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--gray-200);
+    }
+
+    .toolbar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .toolbar .search-input {
+        flex: 1;
+    }
+
+    .employee-list {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-md);
+    }
+
+    .employee-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid var(--gray-100);
+        cursor: pointer;
+        transition: background-color 0.15s;
+    }
+
+    .employee-item:last-child {
+        border-bottom: none;
+    }
+
+    .employee-item:hover {
+        background-color: var(--gray-50);
+    }
+
+    .employee-item.selected {
+        background-color: var(--primary-50);
+        border-left: 3px solid var(--primary-500);
+    }
+
+    .employee-info {
+        flex: 1;
+    }
+
+    .employee-name {
+        font-weight: 500;
+        color: var(--gray-900);
+    }
+
+    .employee-details {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        margin-top: 0.125rem;
+    }
+
+    .employee-details span {
+        margin-right: 0.5rem;
+    }
+
+    .employee-contact {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+        margin-top: 0.25rem;
+    }
+
+    .employee-contact span {
+        margin-right: 1rem;
+    }
+
+    .employee-actions {
+        display: flex;
+        gap: 0.25rem;
+        align-items: center;
+    }
+
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.8125rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        color: var(--gray-500);
+    }
+
+    .empty-icon {
+        width: 3rem;
+        height: 3rem;
+        margin-bottom: 1rem;
+        color: var(--gray-400);
+    }
+
+    .empty-state p {
+        margin-bottom: 1rem;
+    }
+</style>
+
