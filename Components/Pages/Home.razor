@@ -52,6 +52,7 @@
                         <th>Штрихкод</th>
                         <th>Местоположение</th>
                         <th>Статус</th>
+                        <th>Примечания</th>
                         <th class="actions-col">Действия</th>
                     </tr>
                 </thead>
@@ -59,7 +60,7 @@
                     @if (!equipment.Any())
                     {
                         <tr>
-                            <td colspan="7" class="empty-message">Оборудование не найдено</td>
+                            <td colspan="8" class="empty-message">Оборудование не найдено</td>
                         </tr>
                     }
                     else
@@ -77,6 +78,7 @@
                                         @GetStatusName(item.Status)
                                     </span>
                                 </td>
+                                <td class="notes-cell">@item.Notes</td>
                                 <td class="actions-col">
                                     <div class="actions">
                                         <button class="btn-icon btn-split" title="Разделить (создать копию для другого места)" @onclick="() => SplitEquipment(item)">
@@ -124,6 +126,30 @@
                         OnSaved="OnEquipmentSaved" />
 }
 
+@if (showDeleteConfirm && equipmentToDelete != null)
+{
+    <ConfirmModal 
+        Title="Удаление оборудования"
+        Message="@($"Вы уверены, что хотите удалить \"{equipmentToDelete.Name}\"? Это действие нельзя отменить.")"
+        ConfirmText="Удалить"
+        CancelText="Отмена"
+        Variant="ConfirmModal.ConfirmVariant.Danger"
+        OnConfirm="ConfirmDelete"
+        OnCancel="CancelDelete" />
+}
+
+@if (showSplitConfirm && equipmentToSplit != null)
+{
+    <ConfirmModal 
+        Title="Разделение оборудования"
+        Message="@($"Создать копию \"{equipmentToSplit.Name}\" с тем же инвентарным номером? Это позволит разнести части оборудования по разным местам.")"
+        ConfirmText="Создать копию"
+        CancelText="Отмена"
+        Variant="ConfirmModal.ConfirmVariant.Warning"
+        OnConfirm="ConfirmSplit"
+        OnCancel="CancelSplit" />
+}
+
 @code {
     private List<Equipment> equipment = new();
     private bool isLoading = true;
@@ -132,6 +158,12 @@
     private bool showForm = false;
     private Equipment? editingEquipment = null;
     private System.Timers.Timer? searchTimer;
+    
+    // Confirm modals state
+    private bool showDeleteConfirm = false;
+    private Equipment? equipmentToDelete = null;
+    private bool showSplitConfirm = false;
+    private Equipment? equipmentToSplit = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -187,27 +219,50 @@
         await LoadEquipment();
     }
 
-    private async Task DeleteEquipment(Equipment item)
+    private void DeleteEquipment(Equipment item)
     {
-        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Удалить оборудование?");
-        if (confirmed)
-        {
-            await EquipmentService.DeleteAsync(item.Id);
-            await LoadEquipment();
-        }
+        equipmentToDelete = item;
+        showDeleteConfirm = true;
     }
 
-    private async Task SplitEquipment(Equipment item)
+    private async Task ConfirmDelete()
     {
-        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
-            $"Создать копию \"{item.Name}\" с тем же инвентарным номером?\n\nЭто позволит разнести части оборудования по разным местам.");
-        if (confirmed)
+        if (equipmentToDelete != null)
         {
-            var duplicate = await EquipmentService.DuplicateAsync(item.Id);
+            await EquipmentService.DeleteAsync(equipmentToDelete.Id);
             await LoadEquipment();
+        }
+        CancelDelete();
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteConfirm = false;
+        equipmentToDelete = null;
+    }
+
+    private void SplitEquipment(Equipment item)
+    {
+        equipmentToSplit = item;
+        showSplitConfirm = true;
+    }
+
+    private async Task ConfirmSplit()
+    {
+        if (equipmentToSplit != null)
+        {
+            var duplicate = await EquipmentService.DuplicateAsync(equipmentToSplit.Id);
+            await LoadEquipment();
+            CancelSplit();
             // Открываем форму редактирования для созданной копии
             OpenEditForm(duplicate);
         }
+    }
+
+    private void CancelSplit()
+    {
+        showSplitConfirm = false;
+        equipmentToSplit = null;
     }
 
     private async Task PrintBarcode(Equipment item)

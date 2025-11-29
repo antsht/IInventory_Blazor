@@ -408,6 +408,15 @@ html, body {
     width: 160px;
 }
 
+.notes-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--gray-600);
+    font-size: 0.8125rem;
+}
+
 .actions {
     display: flex;
     gap: 0.25rem;
@@ -850,4 +859,100 @@ html, body {
     position: absolute;
     right: 0.75rem;
     top: 0.5rem;
+}
+
+/* Confirmation Modal */
+.modal-confirm {
+    max-width: 24rem;
+    padding: 2rem;
+    text-align: center;
+    animation: modalSlideIn 0.2s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-1rem) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.confirm-icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto 1.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-icon svg {
+    width: 2rem;
+    height: 2rem;
+}
+
+.confirm-icon-danger {
+    background: var(--danger-100);
+    color: var(--danger-600);
+}
+
+.confirm-icon-warning {
+    background: var(--warning-100);
+    color: var(--warning-500);
+}
+
+.confirm-icon-info {
+    background: var(--primary-100);
+    color: var(--primary-600);
+}
+
+.confirm-content {
+    margin-bottom: 1.5rem;
+}
+
+.confirm-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: 0.5rem;
+}
+
+.confirm-message {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    line-height: 1.6;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.confirm-actions .btn {
+    flex: 1;
+    justify-content: center;
+}
+
+.btn-danger {
+    background: var(--danger-600);
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: var(--danger-700);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-warning {
+    background: var(--warning-500);
+    color: white;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background: var(--warning-600);
+    box-shadow: var(--shadow-md);
 }
