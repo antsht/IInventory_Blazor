@@ -293,6 +293,15 @@ html, body {
     background: var(--danger-50);
 }
 
+.btn-split {
+    color: var(--warning-500);
+}
+
+.btn-split:hover {
+    background: var(--warning-50);
+    color: var(--warning-800);
+}
+
 /* Forms */
 .form-group {
     margin-bottom: 1rem;
@@ -396,7 +405,7 @@ html, body {
 
 .actions-col {
     text-align: right;
-    width: 120px;
+    width: 160px;
 }
 
 .actions {

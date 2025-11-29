@@ -4,16 +4,10 @@ using InventoryApp.Models;
 
 namespace InventoryApp.Services;
 
-public class EquipmentService
+public class EquipmentService(IDbContextFactory<ApplicationDbContext> contextFactory, BarcodeService barcodeService)
 {
-    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
-    private readonly BarcodeService _barcodeService;
-
-    public EquipmentService(IDbContextFactory<ApplicationDbContext> contextFactory, BarcodeService barcodeService)
-    {
-        _contextFactory = contextFactory;
-        _barcodeService = barcodeService;
-    }
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory = contextFactory;
+    private readonly BarcodeService _barcodeService = barcodeService;
 
     public async Task<List<Equipment>> GetAllAsync()
     {
@@ -91,10 +85,10 @@ public class EquipmentService
         {
             var term = searchTerm.ToLower();
             query = query.Where(e =>
-                e.Name.ToLower().Contains(term) ||
-                e.Barcode.ToLower().Contains(term) ||
-                e.Model.ToLower().Contains(term) ||
-                e.SerialNumber.ToLower().Contains(term));
+                e.Name.Contains(term, StringComparison.CurrentCultureIgnoreCase) ||
+                e.Barcode.Contains(term, StringComparison.CurrentCultureIgnoreCase) ||
+                e.Model.Contains(term, StringComparison.CurrentCultureIgnoreCase) ||
+                e.SerialNumber.Contains(term, StringComparison.CurrentCultureIgnoreCase));
         }
 
         if (!string.IsNullOrWhiteSpace(typeFilter) && typeFilter != "all")
@@ -105,6 +99,36 @@ public class EquipmentService
         return await query
             .OrderByDescending(e => e.CreatedAt)
             .ToListAsync();
+    }
+
+    public async Task<Equipment> DuplicateAsync(Guid id)
+    {
+        using var context = await _contextFactory.CreateDbContextAsync();
+        var original = await context.Equipment.FindAsync(id) ?? throw new InvalidOperationException("Оборудование не найдено");
+        var duplicate = new Equipment
+        {
+            Id = Guid.NewGuid(),
+            Barcode = original.Barcode, // Сохраняем тот же инвентарный номер
+            Name = original.Name,
+            Type = original.Type,
+            Manufacturer = original.Manufacturer,
+            Model = original.Model,
+            SerialNumber = original.SerialNumber,
+            PurchaseDate = original.PurchaseDate,
+            Status = original.Status,
+            Location = original.Location,
+            AssignedTo = original.AssignedTo,
+            Notes = string.IsNullOrEmpty(original.Notes) 
+                ? "(Разделено)" 
+                : $"{original.Notes} (Разделено)",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        context.Equipment.Add(duplicate);
+        await context.SaveChangesAsync();
+
+        return duplicate;
     }
 }
 

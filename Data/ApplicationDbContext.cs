@@ -21,7 +21,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Equipment>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Barcode).IsUnique();
+            entity.HasIndex(e => e.Barcode); // Не уникальный - один инв. номер может быть у нескольких частей оборудования
             entity.Property(e => e.Barcode).IsRequired();
             entity.Property(e => e.Name).IsRequired();
             entity.Property(e => e.Type).IsRequired().HasDefaultValue("PC");
