@@ -748,6 +748,72 @@ html, body {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    gap: 0.75rem;
+}
+
+/* Mark as Found Button */
+.btn-mark-found {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    border-radius: 50%;
+    border: 2px solid var(--success-500);
+    background: transparent;
+    color: var(--success-600);
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.btn-mark-found:hover {
+    background: var(--success-500);
+    color: white;
+    box-shadow: 0 0 0 3px var(--success-100);
+}
+
+.btn-mark-found:active {
+    transform: scale(0.95);
+}
+
+.btn-mark-found .icon {
+    width: 1rem;
+    height: 1rem;
+}
+
+.btn-mark-notfound {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    border-radius: 50%;
+    border: 2px solid var(--danger-400);
+    background: transparent;
+    color: var(--danger-500);
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.btn-mark-notfound:hover {
+    background: var(--danger-500);
+    color: white;
+    box-shadow: 0 0 0 3px var(--danger-100);
+}
+
+.btn-mark-notfound:active {
+    transform: scale(0.95);
+}
+
+.btn-mark-notfound .icon {
+    width: 1rem;
+    height: 1rem;
 }
 
 /* Validation */

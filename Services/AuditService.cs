@@ -5,14 +5,9 @@ using System.Text;
 
 namespace InventoryApp.Services;
 
-public class AuditService
+public class AuditService(IDbContextFactory<ApplicationDbContext> contextFactory)
 {
-    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
-
-    public AuditService(IDbContextFactory<ApplicationDbContext> contextFactory)
-    {
-        _contextFactory = contextFactory;
-    }
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory = contextFactory;
 
     public async Task<List<InventoryAudit>> GetAllAsync()
     {
@@ -128,6 +123,24 @@ public class AuditService
             .Where(e => !scannedIds.Contains(e.Id))
             .OrderBy(e => e.Name)
             .ToListAsync();
+    }
+
+    public async Task<(bool Success, string Message)> UnmarkAsFoundAsync(Guid auditId, Guid equipmentId)
+    {
+        using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var auditItem = await context.AuditItems
+            .FirstOrDefaultAsync(ai => ai.AuditId == auditId && ai.EquipmentId == equipmentId);
+        
+        if (auditItem == null)
+        {
+            return (false, "Запись не найдена");
+        }
+
+        context.AuditItems.Remove(auditItem);
+        await context.SaveChangesAsync();
+
+        return (true, "Оборудование перенесено в ненайденное");
     }
 
     public async Task<string> GenerateCsvReportAsync(Guid auditId)

@@ -182,6 +182,15 @@ else
                         @foreach (var item in scannedItems)
                         {
                             <li class="equipment-item">
+                                @if (currentAudit?.Status == "in_progress")
+                                {
+                                    <button class="btn-mark-notfound" @onclick="() => MarkAsNotFound(item)" title="Вернуть в ненайденное">
+                                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                }
                                 <div class="item-main">
                                     <p class="item-name">@item.Equipment.Name</p>
                                     <p class="item-details">@GetTypeName(item.Equipment.Type) - @item.Equipment.Model</p>
@@ -217,13 +226,23 @@ else
                         @foreach (var eq in notFoundEquipment)
                         {
                             <li class="equipment-item">
-                                <p class="item-name">@eq.Name</p>
-                                <p class="item-details">@GetTypeName(eq.Type) - @eq.Model</p>
-                                @if (!string.IsNullOrEmpty(eq.Location))
+                                @if (currentAudit?.Status == "in_progress")
                                 {
-                                    <p class="item-location">Местоположение: @eq.Location</p>
+                                    <button class="btn-mark-found" @onclick="() => MarkAsFound(eq)" title="Отметить как найденное">
+                                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    </button>
                                 }
-                                <p class="item-barcode">@eq.Barcode</p>
+                                <div class="item-main">
+                                    <p class="item-name">@eq.Name</p>
+                                    <p class="item-details">@GetTypeName(eq.Type) - @eq.Model</p>
+                                    @if (!string.IsNullOrEmpty(eq.Location))
+                                    {
+                                        <p class="item-location">Местоположение: @eq.Location</p>
+                                    }
+                                    <p class="item-barcode">@eq.Barcode</p>
+                                </div>
                             </li>
                         }
                     </ul>
@@ -339,6 +358,38 @@ else
     }
 
     private string GetTypeName(string type) => EquipmentTypes.All.GetValueOrDefault(type, type);
+
+    private async Task MarkAsFound(Equipment equipment)
+    {
+        if (currentAudit == null) return;
+
+        var result = await AuditService.ScanBarcodeAsync(currentAudit.Id, equipment.Barcode);
+        
+        if (result.Success)
+        {
+            await LoadAuditData();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", result.Message);
+        }
+    }
+
+    private async Task MarkAsNotFound(AuditItem item)
+    {
+        if (currentAudit == null) return;
+
+        var result = await AuditService.UnmarkAsFoundAsync(currentAudit.Id, item.EquipmentId);
+        
+        if (result.Success)
+        {
+            await LoadAuditData();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", result.Message);
+        }
+    }
 }
 
 
