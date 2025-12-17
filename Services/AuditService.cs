@@ -159,20 +159,20 @@ public class AuditService(IDbContextFactory<ApplicationDbContext> contextFactory
         var notFoundEquipment = await GetNotFoundEquipmentAsync(auditId);
 
         var csv = new StringBuilder();
-        csv.AppendLine("Статус,Название,Тип,Модель,Штрихкод,Рабочее место,Сотрудник");
+        csv.AppendLine("Статус,Название,Тип,Инв. номер,Рабочее место,Сотрудник");
 
         foreach (var item in scannedItems)
         {
             var workplace = item.Equipment.Workplace?.Name ?? "";
             var employee = item.Equipment.Employee?.FullName ?? "";
-            csv.AppendLine($"Найдено,\"{item.Equipment.Name}\",\"{item.Equipment.Type}\",\"{item.Equipment.Model}\",\"{item.Equipment.Barcode}\",\"{workplace}\",\"{employee}\"");
+            csv.AppendLine($"Найдено,\"{item.Equipment.Name}\",\"{item.Equipment.Type}\",\"{item.Equipment.Barcode}\",\"{workplace}\",\"{employee}\"");
         }
 
         foreach (var eq in notFoundEquipment)
         {
             var workplace = eq.Workplace?.Name ?? "";
             var employee = eq.Employee?.FullName ?? "";
-            csv.AppendLine($"Не найдено,\"{eq.Name}\",\"{eq.Type}\",\"{eq.Model}\",\"{eq.Barcode}\",\"{workplace}\",\"{employee}\"");
+            csv.AppendLine($"Не найдено,\"{eq.Name}\",\"{eq.Type}\",\"{eq.Barcode}\",\"{workplace}\",\"{employee}\"");
         }
 
         return csv.ToString();

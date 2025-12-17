@@ -23,7 +23,7 @@
     <div class="filters">
         <input type="text" 
                class="form-control search-input" 
-               placeholder="Поиск по названию, инв. номеру, модели, месту, сотруднику..." 
+               placeholder="Поиск по названию, инв. номеру, месту, сотруднику..." 
                @bind="searchTerm" 
                @bind:event="oninput"
                @onkeyup="OnSearchKeyUp" />
@@ -54,10 +54,6 @@
                             Тип
                             @RenderSortIcon("Type")
                         </th>
-                        <th class="sortable @GetSortClass("Model")" @onclick='() => SortBy("Model")'>
-                            Модель
-                            @RenderSortIcon("Model")
-                        </th>
                         <th class="sortable @GetSortClass("Barcode")" @onclick='() => SortBy("Barcode")'>
                             Инв. номер
                             @RenderSortIcon("Barcode")
@@ -86,7 +82,7 @@
                     @if (!equipment.Any())
                     {
                         <tr>
-                            <td colspan="10" class="empty-message">Оборудование не найдено</td>
+                            <td colspan="9" class="empty-message">Оборудование не найдено</td>
                         </tr>
                     }
                     else
@@ -96,7 +92,6 @@
                             <tr>
                                 <td>@item.Name</td>
                                 <td>@GetTypeName(item.Type)</td>
-                                <td>@item.Model</td>
                                 <td class="barcode">@item.Barcode</td>
                                 <td class="date-cell">@(item.PurchaseDate?.ToString("dd.MM.yyyy") ?? "—")</td>
                                 <td>@(item.Workplace?.Name ?? "—")</td>
@@ -312,7 +307,6 @@
             item.Barcode, 
             item.Name, 
             GetTypeName(item.Type), 
-            item.Model, 
             location, 
             assignedTo);
         
@@ -350,7 +344,6 @@
         {
             "Name" => sortAscending ? query.OrderBy(e => e.Name) : query.OrderByDescending(e => e.Name),
             "Type" => sortAscending ? query.OrderBy(e => GetTypeName(e.Type)) : query.OrderByDescending(e => GetTypeName(e.Type)),
-            "Model" => sortAscending ? query.OrderBy(e => e.Model) : query.OrderByDescending(e => e.Model),
             "Barcode" => sortAscending ? query.OrderBy(e => e.Barcode) : query.OrderByDescending(e => e.Barcode),
             "PurchaseDate" => sortAscending ? query.OrderBy(e => e.PurchaseDate) : query.OrderByDescending(e => e.PurchaseDate),
             "Workplace" => sortAscending ? query.OrderBy(e => e.Workplace?.Name ?? "") : query.OrderByDescending(e => e.Workplace?.Name ?? ""),

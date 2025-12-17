@@ -22,9 +22,6 @@ public class Equipment
     public string Manufacturer { get; set; } = string.Empty;
 
     [MaxLength(100)]
-    public string Model { get; set; } = string.Empty;
-
-    [MaxLength(100)]
     public string SerialNumber { get; set; } = string.Empty;
 
     public DateOnly? PurchaseDate { get; set; }

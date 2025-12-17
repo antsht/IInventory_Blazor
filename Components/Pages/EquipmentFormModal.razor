@@ -47,16 +47,9 @@
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Производитель</label>
-                    <InputText class="form-control" @bind-Value="formData.Manufacturer" placeholder="Dell, HP, Lenovo..." />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Модель</label>
-                    <InputText class="form-control" @bind-Value="formData.Model" placeholder="Optiplex 7010" />
-                </div>
+            <div class="form-group">
+                <label class="form-label">Производитель</label>
+                <InputText class="form-control" @bind-Value="formData.Manufacturer" placeholder="Dell, HP, Lenovo..." />
             </div>
 
             <div class="form-row">
@@ -194,7 +187,6 @@
                 Name = Equipment.Name,
                 Type = Equipment.Type,
                 Manufacturer = Equipment.Manufacturer,
-                Model = Equipment.Model,
                 InventoryNumber = Equipment.Barcode,
                 PurchaseDate = Equipment.PurchaseDate?.ToDateTime(TimeOnly.MinValue),
                 Status = Equipment.Status,
@@ -247,7 +239,6 @@
                 Name = formData.Name,
                 Type = formData.Type,
                 Manufacturer = formData.Manufacturer,
-                Model = formData.Model,
                 SerialNumber = "",
                 PurchaseDate = formData.PurchaseDate.HasValue 
                     ? DateOnly.FromDateTime(formData.PurchaseDate.Value) 
@@ -307,7 +298,6 @@
         public string Name { get; set; } = "";
         public string Type { get; set; } = "PC";
         public string Manufacturer { get; set; } = "";
-        public string Model { get; set; } = "";
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Инвентарный номер обязателен")]
         public string InventoryNumber { get; set; } = "";
         public DateTime? PurchaseDate { get; set; }

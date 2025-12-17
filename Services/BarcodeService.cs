@@ -9,7 +9,7 @@ public class BarcodeService
         return $"EQ-{timestamp[^8..]}-{random}";
     }
 
-    public string GenerateBarcodeHtml(string inventoryNumber, string name, string type, string model, string location, string assignedTo)
+    public string GenerateBarcodeHtml(string inventoryNumber, string name, string type, string location, string assignedTo)
     {
         var binaryString = string.Join("", inventoryNumber.Select(c => Convert.ToString(c, 2).PadLeft(8, '0')));
         var bars = new System.Text.StringBuilder();
@@ -56,7 +56,7 @@ public class BarcodeService
 <body>
     <div class=""barcode-container"">
         <h3>{name}</h3>
-        <p>{type} - {model}</p>
+        <p>{type}</p>
         <svg width=""{svgWidth}"" height=""{height + 30}"" xmlns=""http://www.w3.org/2000/svg"">
             {bars}
             <text x=""{svgWidth / 2}"" y=""{height + 20}"" text-anchor=""middle"" font-family=""monospace"" font-size=""14"">{inventoryNumber}</text>

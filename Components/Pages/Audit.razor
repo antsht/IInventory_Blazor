@@ -193,7 +193,7 @@ else
                                 }
                                 <div class="item-main">
                                     <p class="item-name">@item.Equipment.Name</p>
-                                    <p class="item-details">@GetTypeName(item.Equipment.Type) - @item.Equipment.Model</p>
+                                    <p class="item-details">@GetTypeName(item.Equipment.Type)</p>
                                     <p class="item-barcode">@item.Equipment.Barcode</p>
                                 </div>
                                 <span class="item-time">@item.ScannedAt.ToLocalTime().ToString("HH:mm:ss")</span>
@@ -236,7 +236,7 @@ else
                                 }
                                 <div class="item-main">
                                     <p class="item-name">@eq.Name</p>
-                                    <p class="item-details">@GetTypeName(eq.Type) - @eq.Model</p>
+                                    <p class="item-details">@GetTypeName(eq.Type)</p>
                                     @if (eq.Workplace != null)
                                     {
                                         <p class="item-location">Рабочее место: @eq.Workplace.Name</p>

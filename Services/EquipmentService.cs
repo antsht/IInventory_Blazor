@@ -61,7 +61,6 @@ public class EquipmentService(IDbContextFactory<ApplicationDbContext> contextFac
         existing.Name = equipment.Name;
         existing.Type = equipment.Type;
         existing.Manufacturer = equipment.Manufacturer;
-        existing.Model = equipment.Model;
         existing.SerialNumber = equipment.SerialNumber;
         existing.PurchaseDate = equipment.PurchaseDate;
         existing.Status = equipment.Status;
@@ -99,7 +98,6 @@ public class EquipmentService(IDbContextFactory<ApplicationDbContext> contextFac
             query = query.Where(e =>
                 e.Name.ToLower().Contains(term) ||
                 e.Barcode.ToLower().Contains(term) ||
-                e.Model.ToLower().Contains(term) ||
                 e.SerialNumber.ToLower().Contains(term) ||
                 (e.Workplace != null && e.Workplace.Name.ToLower().Contains(term)) ||
                 (e.Employee != null && e.Employee.FullName.ToLower().Contains(term)));
@@ -126,7 +124,6 @@ public class EquipmentService(IDbContextFactory<ApplicationDbContext> contextFac
             Name = original.Name,
             Type = original.Type,
             Manufacturer = original.Manufacturer,
-            Model = original.Model,
             SerialNumber = original.SerialNumber,
             PurchaseDate = original.PurchaseDate,
             Status = original.Status,
