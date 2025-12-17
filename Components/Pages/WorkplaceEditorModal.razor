@@ -182,6 +182,30 @@
     <EmployeeEditorModal OnClose="CloseEmployeeEditor" SelectMode="false" />
 }
 
+@if (showDeleteConfirm && workplaceToDelete != null)
+{
+    <ConfirmModal 
+        Title="Удаление рабочего места"
+        Message="@deleteConfirmMessage"
+        ConfirmText="Удалить"
+        CancelText="Отмена"
+        Variant="ConfirmModal.ConfirmVariant.Danger"
+        OnConfirm="ConfirmDeleteWorkplace"
+        OnCancel="CancelDeleteWorkplace" />
+}
+
+@if (showUsageWarning)
+{
+    <ConfirmModal 
+        Title="Невозможно удалить"
+        Message="@usageWarningMessage"
+        ConfirmText="Понятно"
+        CancelText=""
+        Variant="ConfirmModal.ConfirmVariant.Warning"
+        OnConfirm="CloseUsageWarning"
+        OnCancel="CloseUsageWarning" />
+}
+
 @code {
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<Workplace> OnSelected { get; set; }
@@ -195,6 +219,15 @@
     private bool isEditing = false;
     private Workplace? editingWorkplace;
     private bool showEmployeeEditor = false;
+    
+    // Delete confirmation state
+    private bool showDeleteConfirm = false;
+    private Workplace? workplaceToDelete = null;
+    private string deleteConfirmMessage = "";
+    
+    // Usage warning state
+    private bool showUsageWarning = false;
+    private string usageWarningMessage = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -275,8 +308,43 @@
 
     private async Task DeleteWorkplace(Workplace workplace)
     {
-        await WorkplaceService.DeleteAsync(workplace.Id);
-        await LoadData();
+        // Проверяем, используется ли рабочее место
+        var (isUsed, equipmentCount) = await WorkplaceService.CheckUsageAsync(workplace.Id);
+        
+        if (isUsed)
+        {
+            usageWarningMessage = $"Рабочее место \"{workplace.Name}\" используется в оборудовании ({equipmentCount} шт.). Сначала измените или удалите связанное оборудование.";
+            showUsageWarning = true;
+            return;
+        }
+        
+        // Показываем подтверждение
+        workplaceToDelete = workplace;
+        deleteConfirmMessage = $"Вы уверены, что хотите удалить рабочее место \"{workplace.Name}\"?";
+        showDeleteConfirm = true;
+    }
+
+    private async Task ConfirmDeleteWorkplace()
+    {
+        if (workplaceToDelete != null)
+        {
+            await WorkplaceService.DeleteAsync(workplaceToDelete.Id);
+            await LoadData();
+        }
+        CancelDeleteWorkplace();
+    }
+
+    private void CancelDeleteWorkplace()
+    {
+        showDeleteConfirm = false;
+        workplaceToDelete = null;
+        deleteConfirmMessage = "";
+    }
+
+    private void CloseUsageWarning()
+    {
+        showUsageWarning = false;
+        usageWarningMessage = "";
     }
 
     private void SelectWorkplace(Workplace workplace)

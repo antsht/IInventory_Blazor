@@ -122,5 +122,17 @@ public class WorkplaceService(IDbContextFactory<ApplicationDbContext> contextFac
             .OrderBy(w => w.Name)
             .ToListAsync();
     }
+
+    /// <summary>
+    /// Проверяет, используется ли рабочее место в оборудовании
+    /// </summary>
+    public async Task<(bool IsUsed, int EquipmentCount)> CheckUsageAsync(Guid id)
+    {
+        using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var equipmentCount = await context.Equipment.CountAsync(e => e.WorkplaceId == id);
+        
+        return (equipmentCount > 0, equipmentCount);
+    }
 }
 

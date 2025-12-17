@@ -73,9 +73,12 @@
 - ✅ Home.razor - IDisposable implementation for Timer cleanup
 - ✅ BarcodeScannerModal - DotNetObjectReference memory leak
 - ✅ Equipment split - navigation properties now loaded correctly
+- ✅ EmployeeEditorModal - добавлено подтверждение удаления
+- ✅ WorkplaceEditorModal - добавлено подтверждение удаления
+- ✅ Проверка использования перед удалением (справочники не дают удалить если есть ссылки)
 
 ## Known Issues
-- Delete in справочниках (Workplaces/Employees) happens without confirmation
+- None currently documented
 
 ## Technical Debt
 - [ ] No unit tests

@@ -26,6 +26,8 @@
 - **Fixed**: `Home.razor` now implements `IDisposable` interface (Timer was not being disposed)
 - **Fixed**: `BarcodeScannerModal.razor` - `DotNetObjectReference` memory leak fixed
 - **Fixed**: Equipment split now properly loads navigation properties before editing
+- **Added**: Delete confirmation in EmployeeEditorModal and WorkplaceEditorModal
+- **Added**: Usage check before delete (prevents deletion if employee/workplace is referenced)
 - Memory Bank updated with current project state
 
 ## Current Focus

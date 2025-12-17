@@ -102,5 +102,18 @@ public class EmployeeService(IDbContextFactory<ApplicationDbContext> contextFact
             .OrderBy(e => e.FullName)
             .ToListAsync();
     }
+
+    /// <summary>
+    /// Проверяет, используется ли сотрудник в оборудовании или рабочих местах
+    /// </summary>
+    public async Task<(bool IsUsed, int EquipmentCount, int WorkplaceCount)> CheckUsageAsync(Guid id)
+    {
+        using var context = await _contextFactory.CreateDbContextAsync();
+        
+        var equipmentCount = await context.Equipment.CountAsync(e => e.EmployeeId == id);
+        var workplaceCount = await context.Workplaces.CountAsync(w => w.EmployeeId == id && w.IsActive);
+        
+        return (equipmentCount > 0 || workplaceCount > 0, equipmentCount, workplaceCount);
+    }
 }
 

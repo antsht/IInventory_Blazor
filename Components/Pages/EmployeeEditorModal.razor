@@ -160,6 +160,30 @@
     </div>
 </div>
 
+@if (showDeleteConfirm && employeeToDelete != null)
+{
+    <ConfirmModal 
+        Title="Удаление сотрудника"
+        Message="@deleteConfirmMessage"
+        ConfirmText="Удалить"
+        CancelText="Отмена"
+        Variant="ConfirmModal.ConfirmVariant.Danger"
+        OnConfirm="ConfirmDeleteEmployee"
+        OnCancel="CancelDeleteEmployee" />
+}
+
+@if (showUsageWarning)
+{
+    <ConfirmModal 
+        Title="Невозможно удалить"
+        Message="@usageWarningMessage"
+        ConfirmText="Понятно"
+        CancelText=""
+        Variant="ConfirmModal.ConfirmVariant.Warning"
+        OnConfirm="CloseUsageWarning"
+        OnCancel="CloseUsageWarning" />
+}
+
 @code {
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<Employee> OnSelected { get; set; }
@@ -171,6 +195,15 @@
     private bool isLoading = true;
     private bool isEditing = false;
     private Employee? editingEmployee;
+    
+    // Delete confirmation state
+    private bool showDeleteConfirm = false;
+    private Employee? employeeToDelete = null;
+    private string deleteConfirmMessage = "";
+    
+    // Usage warning state
+    private bool showUsageWarning = false;
+    private string usageWarningMessage = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -249,8 +282,49 @@
 
     private async Task DeleteEmployee(Employee employee)
     {
-        await EmployeeService.DeleteAsync(employee.Id);
-        await LoadEmployees();
+        // Проверяем, используется ли сотрудник
+        var (isUsed, equipmentCount, workplaceCount) = await EmployeeService.CheckUsageAsync(employee.Id);
+        
+        if (isUsed)
+        {
+            var parts = new List<string>();
+            if (equipmentCount > 0)
+                parts.Add($"оборудование ({equipmentCount} шт.)");
+            if (workplaceCount > 0)
+                parts.Add($"рабочие места ({workplaceCount} шт.)");
+            
+            usageWarningMessage = $"Сотрудник \"{employee.FullName}\" используется в: {string.Join(", ", parts)}. Сначала измените или удалите связанные записи.";
+            showUsageWarning = true;
+            return;
+        }
+        
+        // Показываем подтверждение
+        employeeToDelete = employee;
+        deleteConfirmMessage = $"Вы уверены, что хотите удалить сотрудника \"{employee.FullName}\"?";
+        showDeleteConfirm = true;
+    }
+
+    private async Task ConfirmDeleteEmployee()
+    {
+        if (employeeToDelete != null)
+        {
+            await EmployeeService.DeleteAsync(employeeToDelete.Id);
+            await LoadEmployees();
+        }
+        CancelDeleteEmployee();
+    }
+
+    private void CancelDeleteEmployee()
+    {
+        showDeleteConfirm = false;
+        employeeToDelete = null;
+        deleteConfirmMessage = "";
+    }
+
+    private void CloseUsageWarning()
+    {
+        showUsageWarning = false;
+        usageWarningMessage = "";
     }
 
     private void SelectEmployee(Employee employee)
