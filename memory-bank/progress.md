@@ -42,16 +42,33 @@
 - [x] Complete audit
 - [x] Generate CSV report
 
+### PDF Reports (Печать) ✅
+- [x] **Print menu** in navigation with dropdown
+- [x] **Список активного оборудования** (`/reports/active`)
+  - PDF report with alphabetical sorting
+  - Only active equipment (status = "active")
+  - Table with: №, Название, Тип, Инв. номер, Рабочее место, Сотрудник
+- [x] **Список по рабочим местам** (`/reports/workplaces`)
+  - PDF report grouped by workplaces
+  - Each workplace starts on new page
+  - Shows workplace name and location
+- [x] **Печать ярлыков** (`/reports/labels`)
+  - PDF with barcode labels
+  - Multiple labels per page (2x5 grid)
+  - Grouped by workplaces
+  - Each label has: name, type, barcode visualization, inventory number
+
 ### User Interface ✅
 - [x] Modern design with Inter font
 - [x] Responsive layout
-- [x] Navigation with dropdown menu for справочники
+- [x] Navigation with dropdown menus (Печать, Справочники)
 - [x] Modal dialogs for forms
 - [x] Confirmation dialogs (custom ConfirmModal component)
 - [x] Status badges with colors
 - [x] Loading states
 - [x] Empty states
 - [x] Sort indicators in table headers
+- [x] Report selection cards with hover effects
 
 ### Technical Infrastructure ✅
 - [x] Blazor Server setup
@@ -62,6 +79,7 @@
 - [x] Proper IDisposable implementation
 - [x] DotNetObjectReference cleanup
 - [x] **CSV data import** (DataSeedService)
+- [x] **PDF generation** (QuestPDF library)
 
 ## Not Yet Implemented
 
@@ -72,12 +90,12 @@
 - [ ] User authentication
 - [ ] Role-based access control
 - [ ] Multi-language support (i18n)
-- [ ] Bulk barcode printing
 - [ ] Equipment categories/tags
 - [ ] Analytics dashboard
 - [ ] Excel export
 - [ ] Dark mode
 - [ ] Offline support (PWA)
+- [ ] Additional report types (по сотрудникам, по типам)
 
 ## Fixed Issues (December 2025)
 - ✅ Home.razor - IDisposable implementation for Timer cleanup
@@ -88,6 +106,9 @@
 - ✅ Проверка использования перед удалением (справочники не дают удалить если есть ссылки)
 - ✅ Added standalone справочник pages (Employees.razor, Workplaces.razor)
 - ✅ Added navigation dropdown for справочники menu
+- ✅ Added PDF reports (Печать) with QuestPDF
+- ✅ Added Reports.razor page with three report types
+- ✅ Added PrintService for PDF generation
 
 ## Known Issues
 - None currently documented

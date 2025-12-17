@@ -2,7 +2,7 @@
 
 ## Current State
 **Date**: December 17, 2025  
-**Status**: Fully functional application with all core features implemented
+**Status**: Fully functional application with PDF report generation
 
 ## What's Working
 - ✅ Equipment CRUD operations
@@ -23,25 +23,27 @@
 - ✅ Sortable columns in all tables
 - ✅ Mark equipment as found/not found in audit
 - ✅ **CSV data import** (DataSeedService)
-- ✅ Navigation dropdown menu for справочники
+- ✅ Navigation dropdown menus for Печать and Справочники
+- ✅ **PDF Report Generation** (QuestPDF)
+  - Список активного оборудования (алфавитная сортировка)
+  - Список по рабочим местам (группировка, постраничный разрыв)
+  - Печать ярлыков со штрих-кодами
 
 ## Recent Changes (December 17, 2025)
-- **Added**: Standalone справочник pages (`Employees.razor`, `Workplaces.razor`)
-  - Sortable columns with visual sort indicators
-  - Search functionality
-  - Toggle to show/hide inactive records
-  - Full CRUD with confirmation dialogs
-- **Added**: Navigation dropdown menu for Справочники
-- **Added**: `DataSeedService` for CSV bulk import
-- **Fixed**: `Home.razor` now implements `IDisposable` interface (Timer disposal)
-- **Fixed**: `BarcodeScannerModal.razor` - `DotNetObjectReference` memory leak fixed
-- **Fixed**: Equipment split now properly loads navigation properties
-- **Added**: Delete confirmation in справочниках with usage check
-- Memory Bank updated with current project state
+- **Added**: **Print menu (Печать)** in navigation with dropdown
+  - `/reports/active` - Список активного оборудования (PDF)
+  - `/reports/workplaces` - Список по рабочим местам (PDF)  
+  - `/reports/labels` - Печать ярлыков со штрих-кодами (PDF)
+- **Added**: `PrintService.cs` for PDF generation using QuestPDF library
+- **Added**: `Reports.razor` page with report type selection
+- **Added**: `downloadPdf()` JS function for PDF file download
+- **Added**: QuestPDF NuGet package (v2025.12.0)
+- **Updated**: Navigation with two dropdown menus (Печать, Справочники)
+- Memory Bank updated with print functionality
 
 ## Current Focus
-- Application is feature-complete for core requirements
-- Code quality and resource management improvements completed
+- PDF report generation fully implemented
+- Three report types available for active equipment
 
 ## Next Steps
 Potential improvements and features:
@@ -49,12 +51,12 @@ Potential improvements and features:
 2. Bulk equipment import UI (CSV/Excel upload)
 3. Equipment history tracking
 4. User authentication and roles
-5. Print multiple barcodes at once
-6. Equipment categories/tags
-7. Dashboard with analytics
-8. Export equipment list to Excel
-9. Dark mode
-10. Offline support (PWA)
+5. Equipment categories/tags
+6. Dashboard with analytics
+7. Export equipment list to Excel
+8. Dark mode
+9. Offline support (PWA)
+10. Additional report types (по сотрудникам, по типам)
 
 ## Active Decisions
 - Using SQLite for simplicity (no external DB server needed)
@@ -62,6 +64,8 @@ Potential improvements and features:
 - Inventory number = Barcode (SerialNumber field stores it)
 - SVG-based barcode rendering (simple binary representation)
 - Standalone справочник pages instead of modal-only management
+- QuestPDF Community license for PDF generation
+- PDF reports filter only active equipment (status = "active")
 
 ## Known Considerations
 - Blazor Server requires stable connection
@@ -69,10 +73,12 @@ Potential improvements and features:
 - No offline capability
 - No authentication (single-user assumed)
 - DataSeedService reads from `data.csv` at startup if DB is empty
+- QuestPDF requires Community license acknowledgment
 
 ## Architecture Notes
 - `IDbContextFactory` pattern used throughout for thread-safe DB operations
 - Services registered as Scoped in Program.cs
 - Modal components use EventCallback pattern for parent communication
 - All справочник tables have full sorting support
-- Navigation uses dropdown menu for справочники section
+- Navigation uses two dropdown menus (Печать, Справочники)
+- `PrintService` generates PDF reports with QuestPDF fluent API

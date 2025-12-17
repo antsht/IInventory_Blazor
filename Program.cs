@@ -23,6 +23,7 @@ builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<WorkplaceService>();
 builder.Services.AddScoped<DataSeedService>();
+builder.Services.AddScoped<PrintService>();
 
 var app = builder.Build();
 

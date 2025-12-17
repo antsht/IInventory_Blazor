@@ -23,7 +23,8 @@
 │  ├── BarcodeService      (Barcode HTML generation)          │
 │  ├── EmployeeService     (Employee CRUD)                    │
 │  ├── WorkplaceService    (Workplace CRUD)                   │
-│  └── DataSeedService     (CSV import at startup)            │
+│  ├── DataSeedService     (CSV import at startup)            │
+│  └── PrintService        (PDF report generation)            │
 ├─────────────────────────────────────────────────────────────┤
 │  Data/                                                       │
 │  └── ApplicationDbContext (EF Core DbContext)               │
@@ -46,17 +47,22 @@
 ## Navigation Structure
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Navigation Bar                                              │
-├─────────────────────────────────────────────────────────────┤
-│  [Каталог оборудования]  [Инвентаризация]  [Справочники ▼] │
-│                                             ├── Сотрудники  │
-│                                             └── Раб. места  │
-└─────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────┐
+│  Navigation Bar                                                             │
+├────────────────────────────────────────────────────────────────────────────┤
+│  [Каталог оборудования]  [Инвентаризация]  [Печать ▼]     [Справочники ▼] │
+│                                             ├── Список актив.  ├── Сотрудники │
+│                                             ├── По раб. местам └── Раб. места │
+│                                             └── Ярлыки                      │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
 - `/` - Equipment catalog (Home.razor)
 - `/audit` - Inventory audit (Audit.razor)
+- `/reports` - Print reports (Reports.razor)
+  - `/reports/active` - Active equipment list (PDF)
+  - `/reports/workplaces` - Equipment by workplaces (PDF)
+  - `/reports/labels` - Barcode labels (PDF)
 - `/employees` - Employee справочник (Employees.razor)
 - `/workplaces` - Workplace справочник (Workplaces.razor)
 
@@ -202,12 +208,13 @@ All table views implement column sorting:
 | `Audit.razor` | Audit list, audit workflow, statistics |
 | `Employees.razor` | Employee справочник page with table, search, sort |
 | `Workplaces.razor` | Workplace справочник page with table, search, sort |
+| `Reports.razor` | PDF report selection and generation (Печать menu) |
 | `EquipmentFormModal.razor` | Equipment form (add/edit) |
 | `BarcodeScannerModal.razor` | Barcode input for scanning |
 | `ConfirmModal.razor` | Reusable confirmation dialog |
 | `EmployeeEditorModal.razor` | Employee form modal (add/edit) |
 | `WorkplaceEditorModal.razor` | Workplace form modal (add/edit) |
-| `MainLayout.razor` | Navigation with dropdown, header, layout |
+| `MainLayout.razor` | Navigation with dropdowns (Печать, Справочники), header, layout |
 
 ## CSS Architecture
 - CSS Variables for theming (colors, radii, shadows)

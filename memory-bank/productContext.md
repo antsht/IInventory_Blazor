@@ -55,6 +55,11 @@ Organizations need to track IT equipment for asset management, depreciation, and
 5. **Complete Audit**: Mark audit as complete
 6. **Generate Report**: Download CSV with audit results
 
+### Print Reports (PDF)
+1. **Список активного оборудования**: Alphabetically sorted list of all active equipment
+2. **Список по рабочим местам**: Equipment grouped by workplaces, each workplace on new page
+3. **Печать ярлыков**: Barcode labels for physical equipment (multiple per page)
+
 ## User Experience Goals
 - **Intuitive navigation**: Clear sections (Equipment, Audit, Справочники dropdown)
 - **Fast data entry**: Forms with validation and smart defaults
@@ -73,6 +78,10 @@ Organizations need to track IT equipment for asset management, depreciation, and
 ## Navigation Structure
 - **Каталог оборудования** (`/`) - Main equipment list
 - **Инвентаризация** (`/audit`) - Audit functionality
+- **Печать** (dropdown):
+  - **Список активного оборудования** (`/reports/active`) - PDF report
+  - **Список по рабочим местам** (`/reports/workplaces`) - PDF report
+  - **Печать ярлыков** (`/reports/labels`) - PDF barcode labels
 - **Справочники** (dropdown):
   - **Сотрудники** (`/employees`) - Employee directory
   - **Рабочие места** (`/workplaces`) - Workplace directory

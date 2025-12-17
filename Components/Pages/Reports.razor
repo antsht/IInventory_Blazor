@@ -1,0 +1,321 @@
+@page "/reports"
+@page "/reports/{ReportType}"
+@rendermode InteractiveServer
+@inject InventoryApp.Services.PrintService PrintService
+@inject IJSRuntime JS
+
+<div class="page-header">
+    <h2>Печать отчетов</h2>
+    <p class="page-subtitle">Выберите тип отчета для формирования и печати</p>
+</div>
+
+<div class="reports-grid">
+    <div class="report-card @(selectedReport == "active" ? "selected" : "")" @onclick="@(() => SelectReport("active"))">
+        <div class="report-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                <path d="M9 12h6M9 16h6"/>
+            </svg>
+        </div>
+        <h3>Список активного оборудования</h3>
+        <p>Общий список всего активного оборудования, отсортированный по алфавиту</p>
+        <ul class="report-features">
+            <li>✓ Сортировка по названию</li>
+            <li>✓ Только активное оборудование</li>
+            <li>✓ Инвентарные номера</li>
+        </ul>
+    </div>
+
+    <div class="report-card @(selectedReport == "workplaces" ? "selected" : "")" @onclick="@(() => SelectReport("workplaces"))">
+        <div class="report-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+            </svg>
+        </div>
+        <h3>Список по рабочим местам</h3>
+        <p>Оборудование сгруппировано по рабочим местам, каждое место с новой страницы</p>
+        <ul class="report-features">
+            <li>✓ Группировка по местам</li>
+            <li>✓ Новая страница для каждого места</li>
+            <li>✓ Информация о сотрудниках</li>
+        </ul>
+    </div>
+
+    <div class="report-card @(selectedReport == "labels" ? "selected" : "")" @onclick="@(() => SelectReport("labels"))">
+        <div class="report-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
+                <line x1="7" y1="7" x2="7.01" y2="7"/>
+            </svg>
+        </div>
+        <h3>Печать ярлыков</h3>
+        <p>Ярлыки со штрих-кодами для наклеивания на оборудование</p>
+        <ul class="report-features">
+            <li>✓ Штрих-коды</li>
+            <li>✓ Несколько ярлыков на странице</li>
+            <li>✓ Группировка по местам</li>
+        </ul>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(selectedReport))
+{
+    <div class="report-actions">
+        <button class="btn btn-primary btn-lg" @onclick="GenerateReport" disabled="@isGenerating">
+            @if (isGenerating)
+            {
+                <span class="spinner"></span>
+                <span>Формирование...</span>
+            }
+            else
+            {
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9V2h12v7"/>
+                    <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
+                    <rect x="6" y="14" width="12" height="8"/>
+                </svg>
+                <span>Сформировать PDF</span>
+            }
+        </button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-error">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        @errorMessage
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? ReportType { get; set; }
+
+    private string selectedReport = "";
+    private bool isGenerating = false;
+    private string? errorMessage;
+
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrEmpty(ReportType))
+        {
+            selectedReport = ReportType.ToLower();
+        }
+    }
+
+    private void SelectReport(string reportType)
+    {
+        selectedReport = reportType;
+        errorMessage = null;
+    }
+
+    private async Task GenerateReport()
+    {
+        if (string.IsNullOrEmpty(selectedReport)) return;
+
+        isGenerating = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            byte[] pdfBytes;
+            string fileName;
+
+            switch (selectedReport)
+            {
+                case "active":
+                    pdfBytes = await PrintService.GenerateActiveEquipmentListAsync();
+                    fileName = $"Активное_оборудование_{DateTime.Now:yyyy-MM-dd}.pdf";
+                    break;
+                case "workplaces":
+                    pdfBytes = await PrintService.GenerateEquipmentByWorkplacesAsync();
+                    fileName = $"Оборудование_по_местам_{DateTime.Now:yyyy-MM-dd}.pdf";
+                    break;
+                case "labels":
+                    pdfBytes = await PrintService.GenerateLabelsAsync();
+                    fileName = $"Ярлыки_{DateTime.Now:yyyy-MM-dd}.pdf";
+                    break;
+                default:
+                    throw new InvalidOperationException("Неизвестный тип отчета");
+            }
+
+            // Download PDF
+            await JS.InvokeVoidAsync("downloadPdf", fileName, pdfBytes);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Ошибка при формировании отчета: {ex.Message}";
+        }
+        finally
+        {
+            isGenerating = false;
+            StateHasChanged();
+        }
+    }
+}
+
+<style>
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-header h2 {
+        margin: 0;
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .page-subtitle {
+        margin: 0.5rem 0 0;
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    .reports-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .report-card {
+        background: white;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .report-card:hover {
+        border-color: var(--primary-400);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+    }
+
+    .report-card.selected {
+        border-color: var(--primary-600);
+        background: var(--primary-50);
+        box-shadow: 0 4px 16px rgba(79, 70, 229, 0.15);
+    }
+
+    .report-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--primary-100);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .report-icon svg {
+        width: 24px;
+        height: 24px;
+        color: var(--primary-600);
+    }
+
+    .report-card.selected .report-icon {
+        background: var(--primary-600);
+    }
+
+    .report-card.selected .report-icon svg {
+        color: white;
+    }
+
+    .report-card h3 {
+        margin: 0 0 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .report-card p {
+        margin: 0 0 1rem;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .report-features {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .report-features li {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        padding: 0.25rem 0;
+    }
+
+    .report-card.selected .report-features li {
+        color: var(--primary-700);
+    }
+
+    .report-actions {
+        display: flex;
+        justify-content: center;
+        padding: 1.5rem;
+        background: var(--bg-secondary);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+
+    .btn-lg {
+        padding: 0.875rem 2rem;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-lg .icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .spinner {
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .alert {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+    }
+
+    .alert-error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #dc2626;
+    }
+
+    .alert .icon {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+</style>
+

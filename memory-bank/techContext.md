@@ -22,6 +22,7 @@
 ### JavaScript Interop
 - `printBarcode()` - Open popup window for barcode printing
 - `downloadFile()` - Trigger file download for CSV reports
+- `downloadPdf()` - Download PDF file from byte array
 - `addEscListener()` - ESC key handling for modals
 
 ## Development Setup
@@ -65,6 +66,7 @@ dotnet run
 Microsoft.EntityFrameworkCore.Design 9.0.0
 Microsoft.EntityFrameworkCore.Sqlite 9.0.0
 Microsoft.EntityFrameworkCore.Tools 9.0.0
+QuestPDF 2025.12.0
 ```
 
 ## Project Structure
@@ -76,13 +78,14 @@ IInventory_Blazor/
 │   │   ├── Audit.razor        # Inventory audit
 │   │   ├── Employees.razor    # Employee справочник
 │   │   ├── Workplaces.razor   # Workplace справочник
+│   │   ├── Reports.razor      # PDF reports page (Печать)
 │   │   ├── EquipmentFormModal.razor
 │   │   ├── BarcodeScannerModal.razor
 │   │   ├── ConfirmModal.razor
 │   │   ├── EmployeeEditorModal.razor
 │   │   └── WorkplaceEditorModal.razor
 │   ├── Layout/          # Layout components
-│   │   └── MainLayout.razor   # Nav with dropdown
+│   │   └── MainLayout.razor   # Nav with dropdown menus
 │   ├── App.razor        # Root component
 │   └── Routes.razor     # Router configuration
 ├── Data/
@@ -99,7 +102,8 @@ IInventory_Blazor/
 │   ├── WorkplaceService.cs
 │   ├── AuditService.cs
 │   ├── BarcodeService.cs
-│   └── DataSeedService.cs  # CSV import
+│   ├── DataSeedService.cs  # CSV import
+│   └── PrintService.cs     # PDF report generation (QuestPDF)
 ├── wwwroot/
 │   ├── app.css          # Main styles
 │   └── js/app.js        # JS interop functions
@@ -120,6 +124,7 @@ builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<WorkplaceService>();
 builder.Services.AddScoped<BarcodeService>();
 builder.Services.AddScoped<DataSeedService>();
+builder.Services.AddScoped<PrintService>();
 ```
 
 ### Component Lifecycle
