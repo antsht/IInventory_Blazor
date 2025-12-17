@@ -7,15 +7,22 @@ A web-based equipment inventory management system built with Blazor Server for t
 
 ### Equipment Management
 - Create, read, update, delete equipment records
-- Auto-generated unique barcodes for each equipment item
-- Equipment properties: name, type, manufacturer, model, serial number, purchase date, status, location, assigned user, notes
-- Search and filter functionality by name, barcode, model, serial number, and equipment type
-- Print barcode labels for equipment
+- Inventory numbers (инвентарные номера) used as barcodes
+- Equipment properties: name, type, manufacturer, model, inventory number, purchase date, status, workplace, assigned employee, notes
+- Search and filter functionality by name, barcode, model, workplace, employee
+- Print inventory number labels for equipment
+- Split/duplicate equipment for multiple locations
+
+### Reference Data (Справочники)
+- Employee management with soft delete
+- Workplace management with responsible employee assignment
+- Equipment-Workplace-Employee relationships
 
 ### Inventory Audit
 - Create new inventory audits with auditor information
 - Scan barcodes (manual input or scanner) to mark equipment as found
 - Real-time statistics: total equipment, found, not found
+- Mark/unmark equipment as found directly from lists
 - Complete audits and track history
 - Generate CSV reports with audit results
 
@@ -25,8 +32,8 @@ A web-based equipment inventory management system built with Blazor Server for t
 - Russian-speaking users (UI is in Russian)
 
 ## Success Criteria
-1. Equipment can be added with auto-generated barcodes
-2. Audits can track which equipment has been verified
-3. Reports can be generated showing audit results
-4. System provides clear visual feedback on audit progress
-
+1. Equipment can be added with user-defined inventory numbers
+2. Equipment can be assigned to workplaces and employees
+3. Audits can track which equipment has been verified
+4. Reports can be generated showing audit results
+5. System provides clear visual feedback on audit progress

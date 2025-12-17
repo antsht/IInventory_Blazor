@@ -50,19 +50,23 @@
     </div>
 </div>
 
+@implements IDisposable
+
 @code {
     [Parameter] public EventCallback<string> OnScan { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
     private string barcodeInput = "";
     private ElementReference inputRef;
+    private DotNetObjectReference<BarcodeScannerModal>? dotNetRef;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             await inputRef.FocusAsync();
-            await JSRuntime.InvokeVoidAsync("addEscListener", DotNetObjectReference.Create(this));
+            dotNetRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("addEscListener", dotNetRef);
         }
     }
 
@@ -91,6 +95,11 @@
             await OnScan.InvokeAsync(barcodeInput.Trim());
             barcodeInput = "";
         }
+    }
+
+    public void Dispose()
+    {
+        dotNetRef?.Dispose();
     }
 }
 

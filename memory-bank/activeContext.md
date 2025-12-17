@@ -1,12 +1,12 @@
 # Active Context: Equipment Inventory System
 
 ## Current State
-**Date**: November 29, 2025  
-**Status**: Functional application with core features implemented
+**Date**: December 17, 2025  
+**Status**: Functional application with core features implemented, bugs fixed
 
 ## What's Working
 - ✅ Equipment CRUD operations
-- ✅ Auto-generated barcodes (format: `EQ-XXXXXXXX-YYYYYY`)
+- ✅ Inventory numbers (инвентарные номера) as barcodes
 - ✅ Equipment search and filtering
 - ✅ Barcode printing (opens print dialog)
 - ✅ Inventory audit creation
@@ -16,14 +16,22 @@
 - ✅ CSV report generation and download
 - ✅ Responsive UI design
 - ✅ Russian language interface
+- ✅ Employee management (справочник сотрудников)
+- ✅ Workplace management (справочник рабочих мест)
+- ✅ Equipment splitting/duplication feature
+- ✅ Sortable columns in equipment table
+- ✅ Mark equipment as found/not found in audit
 
-## Recent Changes
-- Memory Bank initialized (2025-11-29)
-- Project documentation created
+## Recent Changes (December 17, 2025)
+- **Fixed**: `Home.razor` now implements `IDisposable` interface (Timer was not being disposed)
+- **Fixed**: `BarcodeScannerModal.razor` - `DotNetObjectReference` memory leak fixed
+- **Fixed**: Equipment split now properly loads navigation properties before editing
+- Memory Bank updated with current project state
 
 ## Current Focus
-- Initial project setup and documentation
-- Memory Bank structure established
+- Code quality improvements
+- Memory leak fixes
+- Proper resource disposal
 
 ## Next Steps
 Potential improvements and features:
@@ -35,11 +43,12 @@ Potential improvements and features:
 6. Equipment categories/tags
 7. Dashboard with analytics
 8. Export equipment list to Excel
+9. Confirmation dialog before delete in справочниках (Workplaces/Employees)
 
 ## Active Decisions
 - Using SQLite for simplicity (no external DB server needed)
 - Russian-only UI (no i18n framework yet)
-- Barcode format: timestamp-based + random suffix for uniqueness
+- Inventory number = Barcode (SerialNumber field stores it)
 - SVG-based barcode rendering (simple binary representation)
 
 ## Known Considerations
@@ -48,3 +57,8 @@ Potential improvements and features:
 - No offline capability
 - No authentication (single-user assumed)
 
+## Architecture Notes
+- `IDbContextFactory` pattern used throughout for thread-safe DB operations
+- Services registered as Scoped in Program.cs
+- Modal components use EventCallback pattern for parent communication
+- Equipment table has full sorting support on all columns

@@ -178,6 +178,8 @@
         OnCancel="CancelSplit" />
 }
 
+@implements IDisposable
+
 @code {
     private List<Equipment> equipment = new();
     private bool isLoading = true;
@@ -286,8 +288,12 @@
             var duplicate = await EquipmentService.DuplicateAsync(equipmentToSplit.Id);
             await LoadEquipment();
             CancelSplit();
-            // Открываем форму редактирования для созданной копии
-            OpenEditForm(duplicate);
+            // Открываем форму редактирования для созданной копии (перезагружаем с navigation properties)
+            var freshDuplicate = await EquipmentService.GetByIdAsync(duplicate.Id);
+            if (freshDuplicate != null)
+            {
+                OpenEditForm(freshDuplicate);
+            }
         }
     }
 
