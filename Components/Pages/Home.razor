@@ -34,6 +34,13 @@
                 <option value="@type.Key">@type.Value</option>
             }
         </select>
+        <label class="toggle-label">
+            <span class="toggle-switch">
+                <input type="checkbox" @bind="showDisposed" @bind:after="StateHasChanged" />
+                <span class="toggle-slider"></span>
+            </span>
+            <span class="toggle-text">Показать списанные</span>
+        </label>
     </div>
 
     @if (isLoading)
@@ -70,11 +77,11 @@
                             Сотрудник
                             @RenderSortIcon("Employee")
                         </th>
+                        <th>Примечания</th>
                         <th class="sortable @GetSortClass("Status")" @onclick='() => SortBy("Status")'>
                             Статус
                             @RenderSortIcon("Status")
                         </th>
-                        <th>Примечания</th>
                         <th class="actions-col">Действия</th>
                     </tr>
                 </thead>
@@ -96,12 +103,12 @@
                                 <td class="date-cell">@(item.PurchaseDate?.ToString("dd.MM.yyyy") ?? "—")</td>
                                 <td>@(item.Workplace?.Name ?? "—")</td>
                                 <td>@(item.Employee?.FullName ?? "—")</td>
+                                <td class="notes-cell" title="@item.Notes">@item.Notes</td>
                                 <td>
                                     <span class="status-badge status-@item.Status">
                                         @GetStatusName(item.Status)
                                     </span>
                                 </td>
-                                <td class="notes-cell" title="@item.Notes">@item.Notes</td>
                                 <td class="actions-col">
                                     <div class="actions">
                                         <button class="btn-icon btn-split" title="Разделить (создать копию для другого места)" @onclick="() => SplitEquipment(item)">
@@ -183,6 +190,7 @@
     private bool showForm = false;
     private Equipment? editingEquipment = null;
     private System.Timers.Timer? searchTimer;
+    private bool showDisposed = false;
     
     // Sorting state
     private string sortColumn = "Name";
@@ -339,6 +347,13 @@
     private IEnumerable<Equipment> GetSortedEquipment()
     {
         var query = equipment.AsEnumerable();
+        
+        // По умолчанию показываем только активное оборудование
+        // При включении тоггла показываем все (включая списанные)
+        if (!showDisposed)
+        {
+            query = query.Where(e => e.Status == "active");
+        }
         
         query = sortColumn switch
         {

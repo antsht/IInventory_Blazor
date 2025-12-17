@@ -443,6 +443,72 @@ html, body {
     min-width: 150px;
 }
 
+/* Toggle Switch */
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 2.5rem;
+    height: 1.375rem;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--gray-300);
+    transition: 0.2s;
+    border-radius: 9999px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 1rem;
+    width: 1rem;
+    left: 0.1875rem;
+    bottom: 0.1875rem;
+    background-color: white;
+    transition: 0.2s;
+    border-radius: 50%;
+    box-shadow: var(--shadow-sm);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--primary-600);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(1.125rem);
+}
+
+.toggle-switch input:focus + .toggle-slider {
+    box-shadow: 0 0 0 3px var(--primary-100);
+}
+
+.toggle-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gray-600);
+}
+
 /* Tables */
 .table-container {
     overflow-x: auto;
@@ -451,6 +517,7 @@ html, body {
 .data-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .data-table thead {
@@ -458,18 +525,22 @@ html, body {
 }
 
 .data-table th {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 0.5rem;
     text-align: left;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     color: var(--gray-700);
     border-bottom: 1px solid var(--gray-200);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .data-table td {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8125rem;
     border-bottom: 1px solid var(--gray-200);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .data-table tbody tr:hover {
@@ -480,21 +551,42 @@ html, body {
     font-family: 'Courier New', monospace;
     font-size: 0.75rem;
     color: var(--gray-600);
+    word-break: break-all;
 }
 
 .actions-col {
     text-align: right;
-    width: 160px;
+    width: 130px;
 }
 
 .notes-cell {
-    max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
     color: var(--gray-600);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
+    max-height: 3.5em;
+    line-height: 1.4;
 }
+
+/* Column widths for equipment table */
+.data-table th:nth-child(1),
+.data-table td:nth-child(1) { width: 14%; } /* Название */
+.data-table th:nth-child(2),
+.data-table td:nth-child(2) { width: 10%; } /* Тип */
+.data-table th:nth-child(3),
+.data-table td:nth-child(3) { width: 10%; } /* Инв. номер */
+.data-table th:nth-child(4),
+.data-table td:nth-child(4) { width: 10%; } /* Дата */
+.data-table th:nth-child(5),
+.data-table td:nth-child(5) { width: 12%; } /* Рабочее место */
+.data-table th:nth-child(6),
+.data-table td:nth-child(6) { width: 12%; } /* Сотрудник */
+.data-table th:nth-child(7),
+.data-table td:nth-child(7) { width: 9%; } /* Статус */
+.data-table th:nth-child(8),
+.data-table td:nth-child(8) { width: 13%; } /* Примечания */
+.data-table th:nth-child(9),
+.data-table td:nth-child(9) { width: 10%; } /* Действия */
 
 .actions {
     display: flex;
@@ -1040,7 +1132,7 @@ html, body {
 .sortable-table th.sortable {
     cursor: pointer;
     user-select: none;
-    white-space: nowrap;
+    overflow: hidden;
     transition: all 0.15s;
 }
 
@@ -1064,7 +1156,6 @@ html, body {
 }
 
 .date-cell {
-    white-space: nowrap;
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     color: var(--gray-600);
 }
