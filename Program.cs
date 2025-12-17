@@ -22,15 +22,21 @@ builder.Services.AddScoped<EquipmentService>();
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<WorkplaceService>();
+builder.Services.AddScoped<DataSeedService>();
 
 var app = builder.Build();
 
-// Ensure database is created and migrations applied
+// Ensure database is created and migrations applied, then seed data
 using (var scope = app.Services.CreateScope())
 {
     var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
     using var context = await factory.CreateDbContextAsync();
     await context.Database.EnsureCreatedAsync();
+
+    // Seed data from CSV if database is empty
+    var seedService = scope.ServiceProvider.GetRequiredService<DataSeedService>();
+    var csvPath = Path.Combine(app.Environment.ContentRootPath, "inventory.csv");
+    await seedService.SeedFromCsvAsync(csvPath);
 }
 
 // Configure the HTTP request pipeline.
