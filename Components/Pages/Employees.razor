@@ -1,0 +1,494 @@
+@page "/employees"
+@using InventoryApp.Models
+@using InventoryApp.Services
+@inject EmployeeService EmployeeService
+@rendermode InteractiveServer
+
+<PageTitle>Справочник сотрудников</PageTitle>
+
+<div class="page-header">
+    <h2>Справочник сотрудников</h2>
+    <button class="btn btn-primary" @onclick="OpenAddForm">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Добавить сотрудника
+    </button>
+</div>
+
+<div class="card">
+    <div class="filters">
+        <input type="text" 
+               class="form-control search-input" 
+               placeholder="Поиск по ФИО, должности, отделу..." 
+               @bind="searchTerm" 
+               @bind:event="oninput"
+               @onkeyup="OnSearchKeyUp" />
+        <div class="filter-toggles">
+            <label class="checkbox-label">
+                <input type="checkbox" @bind="showInactive" @bind:after="LoadEmployees" />
+                Показать неактивных
+            </label>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading">Загрузка...</div>
+    }
+    else
+    {
+        <div class="table-container">
+            <table class="data-table sortable-table">
+                <thead>
+                    <tr>
+                        <th class="sortable @GetSortClass("FullName")" @onclick='() => SortBy("FullName")'>
+                            ФИО
+                            @RenderSortIcon("FullName")
+                        </th>
+                        <th class="sortable @GetSortClass("Position")" @onclick='() => SortBy("Position")'>
+                            Должность
+                            @RenderSortIcon("Position")
+                        </th>
+                        <th class="sortable @GetSortClass("Department")" @onclick='() => SortBy("Department")'>
+                            Отдел
+                            @RenderSortIcon("Department")
+                        </th>
+                        <th>Email</th>
+                        <th>Телефон</th>
+                        <th>Статус</th>
+                        <th class="actions-col">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!employees.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="empty-message">Сотрудники не найдены</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var employee in GetSortedEmployees())
+                        {
+                            <tr class="@(!employee.IsActive ? "inactive-row" : "")">
+                                <td class="employee-name-cell">@employee.FullName</td>
+                                <td>@(string.IsNullOrEmpty(employee.Position) ? "—" : employee.Position)</td>
+                                <td>@(string.IsNullOrEmpty(employee.Department) ? "—" : employee.Department)</td>
+                                <td>@(string.IsNullOrEmpty(employee.Email) ? "—" : employee.Email)</td>
+                                <td>@(string.IsNullOrEmpty(employee.Phone) ? "—" : employee.Phone)</td>
+                                <td>
+                                    <span class="status-badge @(employee.IsActive ? "status-active" : "status-inactive")">
+                                        @(employee.IsActive ? "Активен" : "Неактивен")
+                                    </span>
+                                </td>
+                                <td class="actions-col">
+                                    <div class="actions">
+                                        <button class="btn-icon btn-edit" title="Редактировать" @onclick="() => OpenEditForm(employee)">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                            </svg>
+                                        </button>
+                                        <button class="btn-icon btn-delete" title="Удалить" @onclick="() => DeleteEmployee(employee)">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="table-footer">
+            <span class="record-count">Всего: @employees.Count</span>
+        </div>
+    }
+</div>
+
+@if (showForm)
+{
+    <div class="modal-overlay" @onclick="CloseForm">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>@(isNewEmployee ? "Новый сотрудник" : "Редактирование сотрудника")</h2>
+                <button class="btn-close" @onclick="CloseForm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">ФИО *</label>
+                    <input class="form-control" @bind="editingEmployee!.FullName" placeholder="Иванов Иван Иванович" />
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Должность</label>
+                        <input class="form-control" @bind="editingEmployee.Position" placeholder="Менеджер" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Отдел</label>
+                        <input class="form-control" @bind="editingEmployee.Department" placeholder="IT отдел" />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input class="form-control" type="email" @bind="editingEmployee.Email" placeholder="ivanov@company.ru" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Телефон</label>
+                        <input class="form-control" @bind="editingEmployee.Phone" placeholder="+7 (999) 123-45-67" />
+                    </div>
+                </div>
+
+                @if (!isNewEmployee)
+                {
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" @bind="editingEmployee.IsActive" />
+                            Активен
+                        </label>
+                    </div>
+                }
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseForm">Отмена</button>
+                    <button class="btn btn-primary" @onclick="SaveEmployee" disabled="@(string.IsNullOrWhiteSpace(editingEmployee.FullName))">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        Сохранить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showDeleteConfirm && employeeToDelete != null)
+{
+    <ConfirmModal 
+        Title="Удаление сотрудника"
+        Message="@deleteConfirmMessage"
+        ConfirmText="Удалить"
+        CancelText="Отмена"
+        Variant="ConfirmModal.ConfirmVariant.Danger"
+        OnConfirm="ConfirmDelete"
+        OnCancel="CancelDelete" />
+}
+
+@if (showUsageWarning)
+{
+    <ConfirmModal 
+        Title="Невозможно удалить"
+        Message="@usageWarningMessage"
+        ConfirmText="Понятно"
+        CancelText=""
+        Variant="ConfirmModal.ConfirmVariant.Warning"
+        OnConfirm="CloseUsageWarning"
+        OnCancel="CloseUsageWarning" />
+}
+
+@implements IDisposable
+
+@code {
+    private List<Employee> employees = new();
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private bool showInactive = false;
+    private bool showForm = false;
+    private bool isNewEmployee = false;
+    private Employee? editingEmployee = null;
+    private System.Timers.Timer? searchTimer;
+    
+    // Sorting state
+    private string sortColumn = "FullName";
+    private bool sortAscending = true;
+    
+    // Delete confirmation state
+    private bool showDeleteConfirm = false;
+    private Employee? employeeToDelete = null;
+    private string deleteConfirmMessage = "";
+    
+    // Usage warning state
+    private bool showUsageWarning = false;
+    private string usageWarningMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEmployees();
+    }
+
+    private async Task LoadEmployees()
+    {
+        isLoading = true;
+        
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            employees = await EmployeeService.GetAllAsync(showInactive);
+        }
+        else
+        {
+            var all = await EmployeeService.SearchAsync(searchTerm);
+            if (showInactive)
+            {
+                // SearchAsync returns only active, so we need to filter differently
+                var inactive = await EmployeeService.GetAllAsync(true);
+                inactive = inactive.Where(e => !e.IsActive).ToList();
+                var term = searchTerm.ToLower();
+                inactive = inactive.Where(e =>
+                    e.FullName.ToLower().Contains(term) ||
+                    e.Position.ToLower().Contains(term) ||
+                    e.Department.ToLower().Contains(term)).ToList();
+                employees = all.Concat(inactive).ToList();
+            }
+            else
+            {
+                employees = all;
+            }
+        }
+        
+        isLoading = false;
+    }
+
+    private void OnSearchKeyUp()
+    {
+        searchTimer?.Stop();
+        searchTimer?.Dispose();
+        searchTimer = new System.Timers.Timer(300);
+        searchTimer.Elapsed += async (sender, e) =>
+        {
+            searchTimer?.Stop();
+            await InvokeAsync(async () =>
+            {
+                await LoadEmployees();
+                StateHasChanged();
+            });
+        };
+        searchTimer.Start();
+    }
+
+    private void OpenAddForm()
+    {
+        editingEmployee = new Employee();
+        isNewEmployee = true;
+        showForm = true;
+    }
+
+    private void OpenEditForm(Employee employee)
+    {
+        editingEmployee = new Employee
+        {
+            Id = employee.Id,
+            FullName = employee.FullName,
+            Position = employee.Position,
+            Department = employee.Department,
+            Email = employee.Email,
+            Phone = employee.Phone,
+            IsActive = employee.IsActive
+        };
+        isNewEmployee = false;
+        showForm = true;
+    }
+
+    private void CloseForm()
+    {
+        showForm = false;
+        editingEmployee = null;
+    }
+
+    private async Task SaveEmployee()
+    {
+        if (editingEmployee == null || string.IsNullOrWhiteSpace(editingEmployee.FullName))
+            return;
+
+        if (isNewEmployee)
+        {
+            await EmployeeService.CreateAsync(editingEmployee);
+        }
+        else
+        {
+            await EmployeeService.UpdateAsync(editingEmployee);
+        }
+
+        showForm = false;
+        editingEmployee = null;
+        await LoadEmployees();
+    }
+
+    private async Task DeleteEmployee(Employee employee)
+    {
+        // Check usage
+        var (isUsed, equipmentCount, workplaceCount) = await EmployeeService.CheckUsageAsync(employee.Id);
+        
+        if (isUsed)
+        {
+            var parts = new List<string>();
+            if (equipmentCount > 0)
+                parts.Add($"оборудование ({equipmentCount} шт.)");
+            if (workplaceCount > 0)
+                parts.Add($"рабочие места ({workplaceCount} шт.)");
+            
+            usageWarningMessage = $"Сотрудник \"{employee.FullName}\" используется в: {string.Join(", ", parts)}. Сначала измените или удалите связанные записи.";
+            showUsageWarning = true;
+            return;
+        }
+        
+        employeeToDelete = employee;
+        deleteConfirmMessage = $"Вы уверены, что хотите удалить сотрудника \"{employee.FullName}\"?";
+        showDeleteConfirm = true;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (employeeToDelete != null)
+        {
+            await EmployeeService.DeleteAsync(employeeToDelete.Id);
+            await LoadEmployees();
+        }
+        CancelDelete();
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteConfirm = false;
+        employeeToDelete = null;
+        deleteConfirmMessage = "";
+    }
+
+    private void CloseUsageWarning()
+    {
+        showUsageWarning = false;
+        usageWarningMessage = "";
+    }
+
+    // Sorting methods
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+    }
+
+    private string GetSortClass(string column)
+    {
+        if (sortColumn != column) return "";
+        return sortAscending ? "sort-asc" : "sort-desc";
+    }
+
+    private IEnumerable<Employee> GetSortedEmployees()
+    {
+        var query = employees.AsEnumerable();
+        
+        query = sortColumn switch
+        {
+            "FullName" => sortAscending ? query.OrderBy(e => e.FullName) : query.OrderByDescending(e => e.FullName),
+            "Position" => sortAscending ? query.OrderBy(e => e.Position) : query.OrderByDescending(e => e.Position),
+            "Department" => sortAscending ? query.OrderBy(e => e.Department) : query.OrderByDescending(e => e.Department),
+            _ => query
+        };
+        
+        return query;
+    }
+
+    private RenderFragment RenderSortIcon(string column) => builder =>
+    {
+        if (sortColumn != column) return;
+        
+        builder.OpenElement(0, "svg");
+        builder.AddAttribute(1, "class", "sort-icon");
+        builder.AddAttribute(2, "viewBox", "0 0 24 24");
+        builder.AddAttribute(3, "fill", "none");
+        builder.AddAttribute(4, "stroke", "currentColor");
+        builder.AddAttribute(5, "stroke-width", "2");
+        
+        if (sortAscending)
+        {
+            builder.OpenElement(6, "polyline");
+            builder.AddAttribute(7, "points", "18 15 12 9 6 15");
+            builder.CloseElement();
+        }
+        else
+        {
+            builder.OpenElement(6, "polyline");
+            builder.AddAttribute(7, "points", "6 9 12 15 18 9");
+            builder.CloseElement();
+        }
+        
+        builder.CloseElement();
+    };
+
+    public void Dispose()
+    {
+        searchTimer?.Stop();
+        searchTimer?.Dispose();
+    }
+}
+
+<style>
+    .filter-toggles {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--gray-700);
+        cursor: pointer;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        width: 1rem;
+        height: 1rem;
+        cursor: pointer;
+    }
+
+    .inactive-row {
+        opacity: 0.6;
+        background-color: var(--gray-50);
+    }
+
+    .employee-name-cell {
+        font-weight: 500;
+    }
+
+    .table-footer {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 1rem;
+        border-top: 1px solid var(--gray-200);
+        margin-top: 1rem;
+    }
+
+    .record-count {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+</style>
+

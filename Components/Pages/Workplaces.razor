@@ -1,0 +1,516 @@
+@page "/workplaces"
+@using InventoryApp.Models
+@using InventoryApp.Services
+@inject WorkplaceService WorkplaceService
+@inject EmployeeService EmployeeService
+@rendermode InteractiveServer
+
+<PageTitle>Справочник рабочих мест</PageTitle>
+
+<div class="page-header">
+    <h2>Справочник рабочих мест</h2>
+    <button class="btn btn-primary" @onclick="OpenAddForm">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Добавить рабочее место
+    </button>
+</div>
+
+<div class="card">
+    <div class="filters">
+        <input type="text" 
+               class="form-control search-input" 
+               placeholder="Поиск по названию, зданию, кабинету..." 
+               @bind="searchTerm" 
+               @bind:event="oninput"
+               @onkeyup="OnSearchKeyUp" />
+        <div class="filter-toggles">
+            <label class="checkbox-label">
+                <input type="checkbox" @bind="showInactive" @bind:after="LoadWorkplaces" />
+                Показать неактивных
+            </label>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading">Загрузка...</div>
+    }
+    else
+    {
+        <div class="table-container">
+            <table class="data-table sortable-table">
+                <thead>
+                    <tr>
+                        <th class="sortable @GetSortClass("Name")" @onclick='() => SortBy("Name")'>
+                            Название
+                            @RenderSortIcon("Name")
+                        </th>
+                        <th class="sortable @GetSortClass("Building")" @onclick='() => SortBy("Building")'>
+                            Здание
+                            @RenderSortIcon("Building")
+                        </th>
+                        <th class="sortable @GetSortClass("Floor")" @onclick='() => SortBy("Floor")'>
+                            Этаж
+                            @RenderSortIcon("Floor")
+                        </th>
+                        <th class="sortable @GetSortClass("Room")" @onclick='() => SortBy("Room")'>
+                            Кабинет
+                            @RenderSortIcon("Room")
+                        </th>
+                        <th class="sortable @GetSortClass("Employee")" @onclick='() => SortBy("Employee")'>
+                            Ответственный
+                            @RenderSortIcon("Employee")
+                        </th>
+                        <th>Описание</th>
+                        <th>Статус</th>
+                        <th class="actions-col">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!workplaces.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="empty-message">Рабочие места не найдены</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var workplace in GetSortedWorkplaces())
+                        {
+                            <tr class="@(!workplace.IsActive ? "inactive-row" : "")">
+                                <td class="workplace-name-cell">@workplace.Name</td>
+                                <td>@(string.IsNullOrEmpty(workplace.Building) ? "—" : workplace.Building)</td>
+                                <td>@(string.IsNullOrEmpty(workplace.Floor) ? "—" : workplace.Floor)</td>
+                                <td>@(string.IsNullOrEmpty(workplace.Room) ? "—" : workplace.Room)</td>
+                                <td>@(workplace.Employee?.FullName ?? "—")</td>
+                                <td class="notes-cell" title="@workplace.Description">@(string.IsNullOrEmpty(workplace.Description) ? "—" : workplace.Description)</td>
+                                <td>
+                                    <span class="status-badge @(workplace.IsActive ? "status-active" : "status-inactive")">
+                                        @(workplace.IsActive ? "Активно" : "Неактивно")
+                                    </span>
+                                </td>
+                                <td class="actions-col">
+                                    <div class="actions">
+                                        <button class="btn-icon btn-edit" title="Редактировать" @onclick="() => OpenEditForm(workplace)">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                            </svg>
+                                        </button>
+                                        <button class="btn-icon btn-delete" title="Удалить" @onclick="() => DeleteWorkplace(workplace)">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="table-footer">
+            <span class="record-count">Всего: @workplaces.Count</span>
+        </div>
+    }
+</div>
+
+@if (showForm)
+{
+    <div class="modal-overlay" @onclick="CloseForm">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>@(isNewWorkplace ? "Новое рабочее место" : "Редактирование рабочего места")</h2>
+                <button class="btn-close" @onclick="CloseForm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Название *</label>
+                    <input class="form-control" @bind="editingWorkplace!.Name" placeholder="РМ-101, Кабинет директора" />
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Здание</label>
+                        <input class="form-control" @bind="editingWorkplace.Building" placeholder="Главный корпус" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Этаж</label>
+                        <input class="form-control" @bind="editingWorkplace.Floor" placeholder="2" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Кабинет/Комната</label>
+                    <input class="form-control" @bind="editingWorkplace.Room" placeholder="205" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ответственный сотрудник</label>
+                    <select class="form-control" @bind="editingWorkplace.EmployeeId">
+                        <option value="">— Не назначен —</option>
+                        @foreach (var emp in allEmployees)
+                        {
+                            <option value="@emp.Id">@emp.FullName @(!string.IsNullOrEmpty(emp.Position) ? $"({emp.Position})" : "")</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Описание</label>
+                    <textarea class="form-control" @bind="editingWorkplace.Description" rows="2" placeholder="Дополнительная информация..."></textarea>
+                </div>
+
+                @if (!isNewWorkplace)
+                {
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" @bind="editingWorkplace.IsActive" />
+                            Активно
+                        </label>
+                    </div>
+                }
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseForm">Отмена</button>
+                    <button class="btn btn-primary" @onclick="SaveWorkplace" disabled="@(string.IsNullOrWhiteSpace(editingWorkplace.Name))">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        Сохранить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showDeleteConfirm && workplaceToDelete != null)
+{
+    <ConfirmModal 
+        Title="Удаление рабочего места"
+        Message="@deleteConfirmMessage"
+        ConfirmText="Удалить"
+        CancelText="Отмена"
+        Variant="ConfirmModal.ConfirmVariant.Danger"
+        OnConfirm="ConfirmDelete"
+        OnCancel="CancelDelete" />
+}
+
+@if (showUsageWarning)
+{
+    <ConfirmModal 
+        Title="Невозможно удалить"
+        Message="@usageWarningMessage"
+        ConfirmText="Понятно"
+        CancelText=""
+        Variant="ConfirmModal.ConfirmVariant.Warning"
+        OnConfirm="CloseUsageWarning"
+        OnCancel="CloseUsageWarning" />
+}
+
+@implements IDisposable
+
+@code {
+    private List<Workplace> workplaces = new();
+    private List<Employee> allEmployees = new();
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private bool showInactive = false;
+    private bool showForm = false;
+    private bool isNewWorkplace = false;
+    private Workplace? editingWorkplace = null;
+    private System.Timers.Timer? searchTimer;
+    
+    // Sorting state
+    private string sortColumn = "Name";
+    private bool sortAscending = true;
+    
+    // Delete confirmation state
+    private bool showDeleteConfirm = false;
+    private Workplace? workplaceToDelete = null;
+    private string deleteConfirmMessage = "";
+    
+    // Usage warning state
+    private bool showUsageWarning = false;
+    private string usageWarningMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        allEmployees = await EmployeeService.GetAllAsync();
+        await LoadWorkplaces();
+    }
+
+    private async Task LoadWorkplaces()
+    {
+        isLoading = true;
+        
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            workplaces = await WorkplaceService.GetAllAsync(showInactive);
+        }
+        else
+        {
+            var all = await WorkplaceService.SearchAsync(searchTerm);
+            if (showInactive)
+            {
+                // SearchAsync returns only active, so we need to include inactive
+                var inactive = await WorkplaceService.GetAllAsync(true);
+                inactive = inactive.Where(w => !w.IsActive).ToList();
+                var term = searchTerm.ToLower();
+                inactive = inactive.Where(w =>
+                    w.Name.ToLower().Contains(term) ||
+                    w.Building.ToLower().Contains(term) ||
+                    w.Room.ToLower().Contains(term)).ToList();
+                workplaces = all.Concat(inactive).ToList();
+            }
+            else
+            {
+                workplaces = all;
+            }
+        }
+        
+        isLoading = false;
+    }
+
+    private void OnSearchKeyUp()
+    {
+        searchTimer?.Stop();
+        searchTimer?.Dispose();
+        searchTimer = new System.Timers.Timer(300);
+        searchTimer.Elapsed += async (sender, e) =>
+        {
+            searchTimer?.Stop();
+            await InvokeAsync(async () =>
+            {
+                await LoadWorkplaces();
+                StateHasChanged();
+            });
+        };
+        searchTimer.Start();
+    }
+
+    private void OpenAddForm()
+    {
+        editingWorkplace = new Workplace();
+        isNewWorkplace = true;
+        showForm = true;
+    }
+
+    private void OpenEditForm(Workplace workplace)
+    {
+        editingWorkplace = new Workplace
+        {
+            Id = workplace.Id,
+            Name = workplace.Name,
+            Building = workplace.Building,
+            Floor = workplace.Floor,
+            Room = workplace.Room,
+            Description = workplace.Description,
+            EmployeeId = workplace.EmployeeId,
+            IsActive = workplace.IsActive
+        };
+        isNewWorkplace = false;
+        showForm = true;
+    }
+
+    private void CloseForm()
+    {
+        showForm = false;
+        editingWorkplace = null;
+    }
+
+    private async Task SaveWorkplace()
+    {
+        if (editingWorkplace == null || string.IsNullOrWhiteSpace(editingWorkplace.Name))
+            return;
+
+        if (isNewWorkplace)
+        {
+            await WorkplaceService.CreateAsync(editingWorkplace);
+        }
+        else
+        {
+            await WorkplaceService.UpdateAsync(editingWorkplace);
+        }
+
+        showForm = false;
+        editingWorkplace = null;
+        await LoadWorkplaces();
+    }
+
+    private async Task DeleteWorkplace(Workplace workplace)
+    {
+        // Check usage
+        var (isUsed, equipmentCount) = await WorkplaceService.CheckUsageAsync(workplace.Id);
+        
+        if (isUsed)
+        {
+            usageWarningMessage = $"Рабочее место \"{workplace.Name}\" используется в оборудовании ({equipmentCount} шт.). Сначала измените или удалите связанное оборудование.";
+            showUsageWarning = true;
+            return;
+        }
+        
+        workplaceToDelete = workplace;
+        deleteConfirmMessage = $"Вы уверены, что хотите удалить рабочее место \"{workplace.Name}\"?";
+        showDeleteConfirm = true;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (workplaceToDelete != null)
+        {
+            await WorkplaceService.DeleteAsync(workplaceToDelete.Id);
+            await LoadWorkplaces();
+        }
+        CancelDelete();
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteConfirm = false;
+        workplaceToDelete = null;
+        deleteConfirmMessage = "";
+    }
+
+    private void CloseUsageWarning()
+    {
+        showUsageWarning = false;
+        usageWarningMessage = "";
+    }
+
+    // Sorting methods
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+    }
+
+    private string GetSortClass(string column)
+    {
+        if (sortColumn != column) return "";
+        return sortAscending ? "sort-asc" : "sort-desc";
+    }
+
+    private IEnumerable<Workplace> GetSortedWorkplaces()
+    {
+        var query = workplaces.AsEnumerable();
+        
+        query = sortColumn switch
+        {
+            "Name" => sortAscending ? query.OrderBy(w => w.Name) : query.OrderByDescending(w => w.Name),
+            "Building" => sortAscending ? query.OrderBy(w => w.Building) : query.OrderByDescending(w => w.Building),
+            "Floor" => sortAscending ? query.OrderBy(w => w.Floor) : query.OrderByDescending(w => w.Floor),
+            "Room" => sortAscending ? query.OrderBy(w => w.Room) : query.OrderByDescending(w => w.Room),
+            "Employee" => sortAscending ? query.OrderBy(w => w.Employee?.FullName ?? "") : query.OrderByDescending(w => w.Employee?.FullName ?? ""),
+            _ => query
+        };
+        
+        return query;
+    }
+
+    private RenderFragment RenderSortIcon(string column) => builder =>
+    {
+        if (sortColumn != column) return;
+        
+        builder.OpenElement(0, "svg");
+        builder.AddAttribute(1, "class", "sort-icon");
+        builder.AddAttribute(2, "viewBox", "0 0 24 24");
+        builder.AddAttribute(3, "fill", "none");
+        builder.AddAttribute(4, "stroke", "currentColor");
+        builder.AddAttribute(5, "stroke-width", "2");
+        
+        if (sortAscending)
+        {
+            builder.OpenElement(6, "polyline");
+            builder.AddAttribute(7, "points", "18 15 12 9 6 15");
+            builder.CloseElement();
+        }
+        else
+        {
+            builder.OpenElement(6, "polyline");
+            builder.AddAttribute(7, "points", "6 9 12 15 18 9");
+            builder.CloseElement();
+        }
+        
+        builder.CloseElement();
+    };
+
+    public void Dispose()
+    {
+        searchTimer?.Stop();
+        searchTimer?.Dispose();
+    }
+}
+
+<style>
+    .filter-toggles {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--gray-700);
+        cursor: pointer;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        width: 1rem;
+        height: 1rem;
+        cursor: pointer;
+    }
+
+    .inactive-row {
+        opacity: 0.6;
+        background-color: var(--gray-50);
+    }
+
+    .workplace-name-cell {
+        font-weight: 500;
+    }
+
+    .table-footer {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 1rem;
+        border-top: 1px solid var(--gray-200);
+        margin-top: 1rem;
+    }
+
+    .record-count {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+</style>
+
