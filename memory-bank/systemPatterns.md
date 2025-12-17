@@ -9,18 +9,21 @@
 │  Components/Pages/                                           │
 │  ├── Home.razor              (Equipment catalog)            │
 │  ├── Audit.razor             (Inventory audit)              │
+│  ├── Employees.razor         (Employee справочник page)     │
+│  ├── Workplaces.razor        (Workplace справочник page)    │
 │  ├── EquipmentFormModal      (Add/Edit equipment)           │
 │  ├── BarcodeScannerModal     (Barcode scanning)             │
 │  ├── ConfirmModal            (Confirmation dialogs)         │
-│  ├── EmployeeEditorModal     (Employee справочник)          │
-│  └── WorkplaceEditorModal    (Workplace справочник)         │
+│  ├── EmployeeEditorModal     (Employee form modal)          │
+│  └── WorkplaceEditorModal    (Workplace form modal)         │
 ├─────────────────────────────────────────────────────────────┤
 │  Services/                                                   │
 │  ├── EquipmentService    (Equipment CRUD + search)          │
 │  ├── AuditService        (Audit operations)                 │
 │  ├── BarcodeService      (Barcode HTML generation)          │
 │  ├── EmployeeService     (Employee CRUD)                    │
-│  └── WorkplaceService    (Workplace CRUD)                   │
+│  ├── WorkplaceService    (Workplace CRUD)                   │
+│  └── DataSeedService     (CSV import at startup)            │
 ├─────────────────────────────────────────────────────────────┤
 │  Data/                                                       │
 │  └── ApplicationDbContext (EF Core DbContext)               │
@@ -39,6 +42,23 @@
                     │  inventory.db   │
                     └─────────────────┘
 ```
+
+## Navigation Structure
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Navigation Bar                                              │
+├─────────────────────────────────────────────────────────────┤
+│  [Каталог оборудования]  [Инвентаризация]  [Справочники ▼] │
+│                                             ├── Сотрудники  │
+│                                             └── Раб. места  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+- `/` - Equipment catalog (Home.razor)
+- `/audit` - Inventory audit (Audit.razor)
+- `/employees` - Employee справочник (Employees.razor)
+- `/workplaces` - Workplace справочник (Workplaces.razor)
 
 ## Data Model
 
@@ -165,21 +185,34 @@ public async Task<bool> DeleteAsync(Guid id)
 }
 ```
 
+### Sortable Table Pattern
+All table views implement column sorting:
+```razor
+<th class="sortable @GetSortClass("Name")" @onclick='() => SortBy("Name")'>
+    Название
+    @RenderSortIcon("Name")
+</th>
+```
+
 ## Component Responsibilities
 
 | Component | Responsibility |
 |-----------|---------------|
 | `Home.razor` | Equipment list, search, filter, sort, CRUD trigger |
 | `Audit.razor` | Audit list, audit workflow, statistics |
+| `Employees.razor` | Employee справочник page with table, search, sort |
+| `Workplaces.razor` | Workplace справочник page with table, search, sort |
 | `EquipmentFormModal.razor` | Equipment form (add/edit) |
 | `BarcodeScannerModal.razor` | Barcode input for scanning |
 | `ConfirmModal.razor` | Reusable confirmation dialog |
-| `EmployeeEditorModal.razor` | Employee CRUD справочник |
-| `WorkplaceEditorModal.razor` | Workplace CRUD справочник |
-| `MainLayout.razor` | Navigation, header, layout structure |
+| `EmployeeEditorModal.razor` | Employee form modal (add/edit) |
+| `WorkplaceEditorModal.razor` | Workplace form modal (add/edit) |
+| `MainLayout.razor` | Navigation with dropdown, header, layout |
 
 ## CSS Architecture
 - CSS Variables for theming (colors, radii, shadows)
 - Component-scoped styles where needed
 - Utility classes for spacing (`.mb-6`)
 - Status badges with semantic colors (`.status-{status}`)
+- Sortable table header styling (`.sortable`, `.sort-asc`, `.sort-desc`)
+- Dropdown menu styling for navigation

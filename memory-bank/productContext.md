@@ -21,7 +21,7 @@ Organizations need to track IT equipment for asset management, depreciation, and
 - **Barcode-based identification**: Quick, accurate equipment identification using inventory numbers
 - **Structured audits**: Systematic process for verifying equipment
 - **Automated reports**: One-click CSV report generation
-- **Reference data management**: Employees and workplaces справочники
+- **Reference data management**: Employees and workplaces справочники with dedicated pages
 
 ## How It Should Work
 
@@ -33,8 +33,18 @@ Organizations need to track IT equipment for asset management, depreciation, and
 5. **Print Label**: Generate printable inventory label for physical equipment
 
 ### Reference Data Management
-1. **Employees**: Add/edit employee records with position and department
-2. **Workplaces**: Define workplaces with location details (building, floor, room)
+1. **Employees** (`/employees` page): 
+   - Full sortable table view
+   - Search by name, position, department
+   - Add/edit with modal forms
+   - Soft delete with usage check
+   - Toggle to show inactive records
+2. **Workplaces** (`/workplaces` page):
+   - Full sortable table view  
+   - Search by name, building, room
+   - Assign responsible employee
+   - Soft delete with usage check
+   - Toggle to show inactive records
 3. **Assignment**: Link employees to workplaces, auto-fill when selecting workplace
 
 ### Audit Workflow
@@ -46,7 +56,7 @@ Organizations need to track IT equipment for asset management, depreciation, and
 6. **Generate Report**: Download CSV with audit results
 
 ## User Experience Goals
-- **Intuitive navigation**: Clear two-section interface (Equipment, Audit)
+- **Intuitive navigation**: Clear sections (Equipment, Audit, Справочники dropdown)
 - **Fast data entry**: Forms with validation and smart defaults
 - **Auto-fill**: Employee auto-selected from workplace
 - **Visual feedback**: Clear status indicators and progress displays
@@ -59,3 +69,10 @@ Organizations need to track IT equipment for asset management, depreciation, and
 - `Workplace` → "Рабочее место"
 - `Employee` → "Сотрудник" / "Ответственный сотрудник"
 - `SerialNumber` → (deprecated, not shown in UI)
+
+## Navigation Structure
+- **Каталог оборудования** (`/`) - Main equipment list
+- **Инвентаризация** (`/audit`) - Audit functionality
+- **Справочники** (dropdown):
+  - **Сотрудники** (`/employees`) - Employee directory
+  - **Рабочие места** (`/workplaces`) - Workplace directory

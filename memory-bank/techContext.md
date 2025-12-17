@@ -44,6 +44,7 @@ dotnet run
 - Auto-created on first run via `EnsureCreatedAsync()`
 - File location: `inventory.db` in project root
 - No migrations needed - uses code-first approach
+- Optional: `DataSeedService` imports from `data.csv` if DB is empty
 
 ## Technical Constraints
 
@@ -71,7 +72,17 @@ Microsoft.EntityFrameworkCore.Tools 9.0.0
 IInventory_Blazor/
 ├── Components/
 │   ├── Pages/           # Routable page components
+│   │   ├── Home.razor         # Equipment catalog
+│   │   ├── Audit.razor        # Inventory audit
+│   │   ├── Employees.razor    # Employee справочник
+│   │   ├── Workplaces.razor   # Workplace справочник
+│   │   ├── EquipmentFormModal.razor
+│   │   ├── BarcodeScannerModal.razor
+│   │   ├── ConfirmModal.razor
+│   │   ├── EmployeeEditorModal.razor
+│   │   └── WorkplaceEditorModal.razor
 │   ├── Layout/          # Layout components
+│   │   └── MainLayout.razor   # Nav with dropdown
 │   ├── App.razor        # Root component
 │   └── Routes.razor     # Router configuration
 ├── Data/
@@ -87,11 +98,13 @@ IInventory_Blazor/
 │   ├── EmployeeService.cs
 │   ├── WorkplaceService.cs
 │   ├── AuditService.cs
-│   └── BarcodeService.cs
+│   ├── BarcodeService.cs
+│   └── DataSeedService.cs  # CSV import
 ├── wwwroot/
 │   ├── app.css          # Main styles
 │   └── js/app.js        # JS interop functions
 ├── Program.cs           # App configuration
+├── memory-bank/         # Project documentation
 └── inventory.db         # SQLite database
 ```
 
@@ -103,7 +116,10 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 builder.Services.AddScoped<EquipmentService>();
 builder.Services.AddScoped<AuditService>();
-// etc.
+builder.Services.AddScoped<EmployeeService>();
+builder.Services.AddScoped<WorkplaceService>();
+builder.Services.AddScoped<BarcodeService>();
+builder.Services.AddScoped<DataSeedService>();
 ```
 
 ### Component Lifecycle
@@ -114,3 +130,10 @@ protected override async Task OnInitializedAsync() { }
 protected override async Task OnAfterRenderAsync(bool firstRender) { }
 public void Dispose() { /* cleanup */ }
 ```
+
+### CSV Import (DataSeedService)
+- Reads from `data.csv` at startup
+- Only seeds if database is empty
+- Parses employees, workplaces, and equipment
+- Automatically determines equipment type from name
+- Maps Russian status text to English codes
