@@ -15,22 +15,57 @@
         <div class="modal-body">
             @if (isCameraActive)
             {
-                <div class="camera-container">
+                <div class="camera-container @(showSuccess ? "scan-success-flash" : "") @(showError ? "scan-error-flash" : "")">
                     <div id="reader" style="width: 100%;"></div>
-                    <div class="scan-status">
-                        <span class="scan-indicator"></span>
-                        <span>Сканирование активно...</span>
-                    </div>
+                    
+                    @if (showSuccess)
+                    {
+                        <div class="scan-success-message">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            <span>@lastScannedCode</span>
+                        </div>
+                    }
+                    else if (showError)
+                    {
+                        <div class="scan-error-message">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            <span>@errorMessage</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="scan-status">
+                            <span class="scan-indicator"></span>
+                            <span>Сканирование активно...</span>
+                        </div>
+                    }
+                    
                     <p class="scan-hint">Расположите штрихкод внутри рамки</p>
-                    <button class="btn btn-secondary mt-3 w-100" @onclick="StopCamera">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <line x1="9" y1="9" x2="15" y2="15"></line>
-                            <line x1="15" y1="9" x2="9" y2="15"></line>
-                        </svg>
-                        Выключить камеру
-                    </button>
                 </div>
+
+                @if (scannedCount > 0)
+                {
+                    <div class="scanned-counter">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 1.25rem; height: 1.25rem;">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>Отсканировано: <strong>@scannedCount</strong></span>
+                    </div>
+                }
+
+                <button class="btn btn-secondary mt-3 w-100" @onclick="StopCamera">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                    </svg>
+                    Завершить сканирование
+                </button>
             }
             else
             {
@@ -93,6 +128,49 @@
     private ElementReference inputRef;
     private DotNetObjectReference<BarcodeScannerModal>? dotNetRef;
     private bool isCameraActive = false;
+    private bool showSuccess = false;
+    private bool showError = false;
+    private string lastScannedCode = "";
+    private string errorMessage = "";
+    private int scannedCount = 0;
+    private HashSet<string> recentScans = new(); // Prevent duplicate scans
+    private System.Timers.Timer? feedbackTimer;
+
+    public void ShowSuccess(string code)
+    {
+        lastScannedCode = code;
+        showSuccess = true;
+        showError = false;
+        scannedCount++;
+        
+        ResetFeedbackTimer();
+        StateHasChanged();
+    }
+
+    public void ShowError(string message)
+    {
+        errorMessage = message;
+        showError = true;
+        showSuccess = false;
+        
+        ResetFeedbackTimer();
+        StateHasChanged();
+    }
+
+    private void ResetFeedbackTimer()
+    {
+        feedbackTimer?.Stop();
+        feedbackTimer?.Dispose();
+        feedbackTimer = new System.Timers.Timer(2000);
+        feedbackTimer.Elapsed += async (s, e) =>
+        {
+            feedbackTimer?.Stop();
+            showSuccess = false;
+            showError = false;
+            await InvokeAsync(StateHasChanged);
+        };
+        feedbackTimer.Start();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -110,6 +188,8 @@
     private async Task StartCamera()
     {
         isCameraActive = true;
+        scannedCount = 0;
+        recentScans.Clear();
         StateHasChanged();
         await Task.Delay(150); // Give time for #reader to render
         try
@@ -119,7 +199,6 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error starting scanner: {ex.Message}");
-            // Try again after clearing
             await Task.Delay(100);
             try { await JSRuntime.InvokeVoidAsync("startScanner", dotNetRef, "reader"); } catch {}
         }
@@ -136,6 +215,8 @@
             Console.WriteLine($"Error stopping scanner: {ex.Message}");
         }
         isCameraActive = false;
+        feedbackTimer?.Stop();
+        feedbackTimer?.Dispose();
         StateHasChanged();
     }
 
@@ -144,9 +225,23 @@
     {
         if (!string.IsNullOrWhiteSpace(result))
         {
-            await StopCamera();
-            barcodeInput = result;
-            await HandleScan();
+            // Prevent duplicate scans of the same barcode within short time
+            if (recentScans.Contains(result))
+            {
+                return;
+            }
+            
+            recentScans.Add(result);
+            
+            // Clear from recent after 3 seconds to allow re-scan
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(3000);
+                recentScans.Remove(result);
+            });
+
+            // Send the scanned code to parent (parent will call ShowSuccess or ShowError)
+            await OnScan.InvokeAsync(result.Trim());
         }
     }
 
@@ -179,6 +274,8 @@
 
     public async ValueTask DisposeAsync()
     {
+        feedbackTimer?.Stop();
+        feedbackTimer?.Dispose();
         if (isCameraActive)
         {
             try { await JSRuntime.InvokeVoidAsync("stopScanner"); } catch {}
@@ -186,5 +283,3 @@
         dotNetRef?.Dispose();
     }
 }
-
-

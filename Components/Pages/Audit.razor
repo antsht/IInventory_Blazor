@@ -254,7 +254,7 @@ else
 
 @if (showScanner)
 {
-    <BarcodeScannerModal OnScan="HandleScan" OnClose="() => showScanner = false" />
+    <BarcodeScannerModal OnScan="HandleScan" OnClose="() => showScanner = false" @ref="scannerModal" />
 }
 
 @code {
@@ -266,6 +266,7 @@ else
     private bool showNewAuditForm = false;
     private bool showScanner = false;
     private string auditorName = "";
+    private BarcodeScannerModal? scannerModal;
 
     protected override async Task OnInitializedAsync()
     {
@@ -323,11 +324,11 @@ else
         if (result.Success)
         {
             await LoadAuditData();
-            showScanner = false;
+            scannerModal?.ShowSuccess(barcode);
         }
         else
         {
-            await JSRuntime.InvokeVoidAsync("alert", result.Message);
+            scannerModal?.ShowError(result.Message ?? "Не найдено");
         }
     }
 
