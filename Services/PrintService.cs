@@ -7,9 +7,10 @@ using QuestPDF.Infrastructure;
 
 namespace InventoryApp.Services;
 
-public class PrintService(IDbContextFactory<ApplicationDbContext> contextFactory)
+public class PrintService(IDbContextFactory<ApplicationDbContext> contextFactory, BarcodeService barcodeService)
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory = contextFactory;
+    private readonly BarcodeService _barcodeService = barcodeService;
 
     static PrintService()
     {
@@ -209,6 +210,7 @@ public class PrintService(IDbContextFactory<ApplicationDbContext> contextFactory
     public async Task<byte[]> GenerateLabelsAsync()
     {
         var equipment = await GetActiveEquipmentAsync();
+        var barcodeService = _barcodeService; // Capture for lambda
         
         // Group by workplace and sort
         var grouped = equipment
@@ -259,7 +261,7 @@ public class PrintService(IDbContextFactory<ApplicationDbContext> contextFactory
 
                         foreach (var item in pageItems)
                         {
-                            table.Cell().Padding(5).Element(cell => ComposeLabel(cell, item.Equipment, item.Workplace));
+                            table.Cell().Padding(5).Element(cell => ComposeLabel(cell, item.Equipment, item.Workplace, barcodeService));
                         }
 
                         // Fill empty cells if needed to maintain layout
@@ -337,7 +339,7 @@ public class PrintService(IDbContextFactory<ApplicationDbContext> contextFactory
             .FontSize(9);
     }
 
-    private static void ComposeLabel(IContainer container, Equipment equipment, Workplace? workplace)
+    private static void ComposeLabel(IContainer container, Equipment equipment, Workplace? workplace, BarcodeService barcodeService)
     {
         container
             .Border(1)
@@ -362,7 +364,7 @@ public class PrintService(IDbContextFactory<ApplicationDbContext> contextFactory
                 // Barcode visualization
                 column.Item().PaddingVertical(5).Element(barcodeContainer =>
                 {
-                    ComposeBarcodeVisualization(barcodeContainer, equipment.Barcode);
+                    ComposeBarcodeVisualization(barcodeContainer, equipment.Barcode, barcodeService);
                 });
 
                 // Inventory number
@@ -387,28 +389,22 @@ public class PrintService(IDbContextFactory<ApplicationDbContext> contextFactory
             });
     }
 
-    private static void ComposeBarcodeVisualization(IContainer container, string barcode)
+    private static void ComposeBarcodeVisualization(IContainer container, string barcode, BarcodeService barcodeService)
     {
-        // Convert barcode to binary representation for simple visualization
-        var binaryString = string.Join("", barcode.Select(c => Convert.ToString(c, 2).PadLeft(8, '0')));
-        
-        // Use Row layout with narrow columns for barcode visualization
-        container.Height(35).Row(row =>
+        try
         {
-            const float barWidth = 1.5f;
-            
-            foreach (char bit in binaryString)
-            {
-                if (bit == '1')
-                {
-                    row.ConstantItem(barWidth).Background(Colors.Black);
-                }
-                else
-                {
-                    row.ConstantItem(barWidth).Background(Colors.White);
-                }
-            }
-        });
+            // Generate real Code 128 barcode
+            var imageBytes = barcodeService.GenerateBarcodeBytes(barcode);
+            container.AlignCenter().Height(45).Image(imageBytes);
+        }
+        catch
+        {
+            // Fallback to simple visualization if barcode generation fails
+            container.Height(35).AlignCenter().Text(barcode)
+                .FontSize(12)
+                .FontFamily("Courier New")
+                .Bold();
+        }
     }
 
     private static string GetTypeName(string typeCode)

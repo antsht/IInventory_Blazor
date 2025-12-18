@@ -17,7 +17,11 @@
             {
                 <div class="camera-container">
                     <div id="reader" style="width: 100%;"></div>
-                    <p class="scan-hint">Наведите камеру на штрихкод</p>
+                    <div class="scan-status">
+                        <span class="scan-indicator"></span>
+                        <span>Сканирование активно...</span>
+                    </div>
+                    <p class="scan-hint">Расположите штрихкод внутри рамки</p>
                     <button class="btn btn-secondary mt-3 w-100" @onclick="StopCamera">
                         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>

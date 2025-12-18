@@ -91,36 +91,32 @@ window.startScanner = async function(dotNetRef, elementId) {
 };
 
 function initializeScanner(dotNetRef, elementId) {
-    // Supported barcode formats
-    const formatsToSupport = [
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.CODE_93,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.ITF,
-        Html5QrcodeSupportedFormats.CODABAR
-    ];
-
-    // Create scanner with format support
-    html5QrCode = new Html5Qrcode(elementId, { formatsToSupport: formatsToSupport, verbose: false });
+    // Create scanner without format restriction - scan all formats
+    html5QrCode = new Html5Qrcode(elementId, { verbose: true });
     
-    // Scanner config - rectangular area better for barcodes
+    // Scanner config - scan full frame for better detection
     const config = { 
-        fps: 15, 
-        qrbox: { width: 280, height: 120 },
-        aspectRatio: 1.777778 // 16:9
+        fps: 10,
+        qrbox: function(viewfinderWidth, viewfinderHeight) {
+            // Use 80% of viewfinder for scanning area
+            let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            let qrboxSize = Math.floor(minEdge * 0.8);
+            return { width: qrboxSize, height: Math.floor(qrboxSize * 0.5) };
+        },
+        experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+        }
     };
+
+    console.log('Starting scanner with config:', config);
 
     html5QrCode.start(
         { facingMode: "environment" },
         config,
         (decodedText, decodedResult) => {
             // Success callback
-            console.log('Scanned:', decodedText, decodedResult);
+            console.log('✅ SCANNED:', decodedText);
+            console.log('Format:', decodedResult.result.format.formatName);
             
             // Vibrate on success (mobile)
             if (navigator.vibrate) {
@@ -130,13 +126,19 @@ function initializeScanner(dotNetRef, elementId) {
             dotNetRef.invokeMethodAsync('HandleScannerResult', decodedText);
         },
         (errorMessage) => {
-            // Ignore scan errors (happens every frame when no barcode found)
+            // Log every 100th error to see if scanner is working
+            if (!window._scanErrorCount) window._scanErrorCount = 0;
+            window._scanErrorCount++;
+            if (window._scanErrorCount % 100 === 0) {
+                console.log('Scanning... (no barcode found yet, attempt:', window._scanErrorCount, ')');
+            }
         }
     ).then(() => {
         scannerRunning = true;
-        console.log('Scanner started successfully');
+        window._scanErrorCount = 0;
+        console.log('✅ Scanner started successfully - point camera at barcode');
     }).catch(err => {
-        console.error('Error starting scanner:', err);
+        console.error('❌ Error starting scanner:', err);
         scannerRunning = false;
         alert('Ошибка запуска камеры: ' + err);
     });
