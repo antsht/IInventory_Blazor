@@ -12,6 +12,7 @@ A web-based equipment inventory management system built with Blazor Server for t
 - Search and filter functionality by name, barcode, model, workplace, employee
 - Print inventory number labels for equipment
 - Split/duplicate equipment for multiple locations
+- **Mobile-ready scanning**: Support for camera-based barcode scanning in browser
 
 ### Reference Data (Справочники)
 - Employee management with soft delete

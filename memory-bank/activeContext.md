@@ -30,33 +30,24 @@
   - Печать ярлыков со штрих-кодами
 
 ## Recent Changes (December 17, 2025)
+- **Implemented**: **Bulk Operations** in equipment list
+  - Selection logic with checkboxes and "Select All"
+  - Bulk actions bar with "Bulk Edit" and "Bulk Delete"
+  - `BulkEditModal.razor` for updating multiple fields at once
+  - Service methods for bulk updates/deletes
 - **Added**: **Print menu (Печать)** in navigation with dropdown
   - `/reports/active` - Список активного оборудования (PDF)
   - `/reports/workplaces` - Список по рабочим местам (PDF)  
   - `/reports/labels` - Печать ярлыков со штрих-кодами (PDF)
-- **Added**: `PrintService.cs` for PDF generation using QuestPDF library
-- **Added**: `Reports.razor` page with report type selection
-- **Added**: `downloadPdf()` JS function for PDF file download
-- **Added**: QuestPDF NuGet package (v2025.12.0)
-- **Updated**: Navigation with two dropdown menus (Печать, Справочники)
-- Memory Bank updated with print functionality
 
 ## Current Focus
-- PDF report generation fully implemented
-- Three report types available for active equipment
+- Implementing **PWA support** and **Camera-based barcode scanning** for mobile devices.
 
 ## Next Steps
-Potential improvements and features:
-1. Camera-based barcode scanning (using device camera)
-2. Bulk equipment import UI (CSV/Excel upload)
-3. Equipment history tracking
-4. User authentication and roles
-5. Equipment categories/tags
-6. Dashboard with analytics
-7. Export equipment list to Excel
-8. Dark mode
-9. Offline support (PWA)
-10. Additional report types (по сотрудникам, по типам)
+1. Create PWA manifest and service worker.
+2. Integrate `html5-qrcode` library for camera-based scanning.
+3. Update `BarcodeScannerModal.razor` to support camera scanning.
+4. Test mobile experience.
 
 ## Active Decisions
 - Using SQLite for simplicity (no external DB server needed)

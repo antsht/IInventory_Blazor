@@ -49,11 +49,16 @@ Organizations need to track IT equipment for asset management, depreciation, and
 
 ### Audit Workflow
 1. **Start Audit**: Create new audit with auditor name
-2. **Scan Equipment**: Use barcode scanner or manual entry to record found equipment
+2. **Scan Equipment**: Use device camera, external barcode scanner, or manual entry to record found equipment
 3. **Track Progress**: View real-time statistics on found vs not found
 4. **Manual Override**: Click to mark items as found/not found
 5. **Complete Audit**: Mark audit as complete
 6. **Generate Report**: Download CSV with audit results
+
+### Mobile Experience & PWA
+1. **Offline Support**: Basic PWA support for reliable access
+2. **Camera Integration**: Built-in barcode scanner using the smartphone camera
+3. **Responsive Design**: Optimized for tablets and phones during physical inventory checks
 
 ### Print Reports (PDF)
 1. **Список активного оборудования**: Alphabetically sorted list of all active equipment

@@ -1162,6 +1162,50 @@ html, body {
     color: var(--gray-600);
 }
 
+/* Camera Scanner Styles */
+.camera-container {
+    background: #000;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+}
+
+#reader {
+    background: #000;
+    border: none !important;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+#reader video {
+    border-radius: var(--radius-md);
+}
+
+#reader__scan_region {
+    background: #000;
+}
+
+#reader__dashboard {
+    display: none !important;
+}
+
+#reader__dashboard_section_csr button {
+    display: none !important;
+}
+
+.scan-hint {
+    text-align: center;
+    color: #fff;
+    font-size: 0.875rem;
+    margin: 0.75rem 0 0 0;
+    opacity: 0.9;
+}
+
+.mt-3 { margin-top: 1rem; }
+.w-100 { width: 100%; }
+.mb-3 { margin-bottom: 1rem; }
+
 /* Bulk Actions Bar */
 .bulk-actions-bar {
     display: flex;

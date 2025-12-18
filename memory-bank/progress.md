@@ -34,7 +34,8 @@
 - [x] Create new audit with auditor name
 - [x] View audit history
 - [x] Open/continue existing audits
-- [x] Scan barcode (manual input)
+- [x] Scan barcode (manual input, external scanner)
+- [x] **Camera-based barcode scanning** (via html5-qrcode)
 - [x] Track found equipment
 - [x] Show not found equipment
 - [x] Real-time statistics (total/found/not found)
@@ -45,22 +46,13 @@
 ### PDF Reports (Печать) ✅
 - [x] **Print menu** in navigation with dropdown
 - [x] **Список активного оборудования** (`/reports/active`)
-  - PDF report with alphabetical sorting
-  - Only active equipment (status = "active")
-  - Table with: №, Название, Тип, Инв. номер, Рабочее место, Сотрудник
 - [x] **Список по рабочим местам** (`/reports/workplaces`)
-  - PDF report grouped by workplaces
-  - Each workplace starts on new page
-  - Shows workplace name and location
 - [x] **Печать ярлыков** (`/reports/labels`)
-  - PDF with barcode labels
-  - Multiple labels per page (2x5 grid)
-  - Grouped by workplaces
-  - Each label has: name, type, barcode visualization, inventory number
 
 ### User Interface ✅
 - [x] Modern design with Inter font
 - [x] Responsive layout
+- [x] **PWA Support** (Manifest, Service Worker)
 - [x] Navigation with dropdown menus (Печать, Справочники)
 - [x] Modal dialogs for forms
 - [x] Confirmation dialogs (custom ConfirmModal component)

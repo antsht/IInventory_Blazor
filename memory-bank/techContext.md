@@ -24,6 +24,12 @@
 - `downloadFile()` - Trigger file download for CSV reports
 - `downloadPdf()` - Download PDF file from byte array
 - `addEscListener()` - ESC key handling for modals
+- **Camera Scanner Interop**: JS functions for initializing and controlling `html5-qrcode`
+
+## PWA Capabilities
+- `manifest.json`: Web app manifest for installation
+- `service-worker.js`: Offline support and caching
+- Icons: 192x192 and 512x512 icons for mobile home screens
 
 ## Development Setup
 
