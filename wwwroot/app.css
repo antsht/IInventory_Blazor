@@ -570,23 +570,25 @@ html, body {
 
 /* Column widths for equipment table */
 .data-table th:nth-child(1),
-.data-table td:nth-child(1) { width: 14%; } /* Название */
+.data-table td:nth-child(1) { width: 40px; } /* Чекбокс */
 .data-table th:nth-child(2),
-.data-table td:nth-child(2) { width: 10%; } /* Тип */
+.data-table td:nth-child(2) { width: 14%; } /* Название */
 .data-table th:nth-child(3),
-.data-table td:nth-child(3) { width: 10%; } /* Инв. номер */
+.data-table td:nth-child(3) { width: 10%; } /* Тип */
 .data-table th:nth-child(4),
-.data-table td:nth-child(4) { width: 10%; } /* Дата */
+.data-table td:nth-child(4) { width: 10%; } /* Инв. номер */
 .data-table th:nth-child(5),
-.data-table td:nth-child(5) { width: 12%; } /* Рабочее место */
+.data-table td:nth-child(5) { width: 10%; } /* Дата */
 .data-table th:nth-child(6),
-.data-table td:nth-child(6) { width: 12%; } /* Сотрудник */
+.data-table td:nth-child(6) { width: 11%; } /* Рабочее место */
 .data-table th:nth-child(7),
-.data-table td:nth-child(7) { width: 9%; } /* Статус */
+.data-table td:nth-child(7) { width: 11%; } /* Сотрудник */
 .data-table th:nth-child(8),
-.data-table td:nth-child(8) { width: 13%; } /* Примечания */
+.data-table td:nth-child(8) { width: 9%; } /* Статус */
 .data-table th:nth-child(9),
-.data-table td:nth-child(9) { width: 10%; } /* Действия */
+.data-table td:nth-child(9) { width: 12%; } /* Примечания */
+.data-table th:nth-child(10),
+.data-table td:nth-child(10) { width: 9%; } /* Действия */
 
 .actions {
     display: flex;
@@ -1158,4 +1160,70 @@ html, body {
 .date-cell {
     font-size: 0.75rem;
     color: var(--gray-600);
+}
+
+/* Bulk Actions Bar */
+.bulk-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--primary-600);
+    color: white;
+    border-radius: var(--radius-md);
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-md);
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-1rem); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.bulk-actions-info {
+    font-weight: 500;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.bulk-actions-btns {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-white {
+    background: white;
+    color: var(--primary-600);
+}
+
+.btn-white:hover {
+    background: var(--primary-50);
+}
+
+.btn-outline-white {
+    background: transparent;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.btn-outline-white:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: white;
+}
+
+.checkbox-col {
+    width: 40px !important;
+    text-align: center !important;
+}
+
+.checkbox-col input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+}
+
+.data-table tr.selected {
+    background: var(--primary-50) !important;
 }

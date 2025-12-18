@@ -1,0 +1,171 @@
+@using InventoryApp.Models
+@using InventoryApp.Services
+@inject EquipmentService EquipmentService
+@inject WorkplaceService WorkplaceService
+@inject EmployeeService EmployeeService
+
+<div class="modal-overlay" @onclick="OnClose">
+    <div class="modal-content" @onclick:stopPropagation="true">
+        <div class="modal-header">
+            <h2>Массовое редактирование (@SelectedCount)</h2>
+            <button class="btn-close" @onclick="OnClose">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <div class="modal-body">
+            <p class="modal-hint">Выберите поля, которые вы хотите изменить для всех выбранных элементов.</p>
+
+            <div class="bulk-field">
+                <label class="checkbox-label">
+                    <input type="checkbox" @bind="changeWorkplace" />
+                    <span class="checkbox-text">Изменить рабочее место</span>
+                </label>
+                <div class="field-control @(changeWorkplace ? "" : "disabled")">
+                    <select class="form-control" @bind="workplaceId" disabled="@(!changeWorkplace)">
+                        <option value="">— Не указано (очистить) —</option>
+                        @foreach (var workplace in workplaces)
+                        {
+                            <option value="@workplace.Id">@workplace.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="bulk-field">
+                <label class="checkbox-label">
+                    <input type="checkbox" @bind="changeEmployee" />
+                    <span class="checkbox-text">Изменить сотрудника</span>
+                </label>
+                <div class="field-control @(changeEmployee ? "" : "disabled")">
+                    <select class="form-control" @bind="employeeId" disabled="@(!changeEmployee)">
+                        <option value="">— Не назначен (очистить) —</option>
+                        @foreach (var employee in employees)
+                        {
+                            <option value="@employee.Id">@employee.FullName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="bulk-field">
+                <label class="checkbox-label">
+                    <input type="checkbox" @bind="changeStatus" />
+                    <span class="checkbox-text">Изменить статус</span>
+                </label>
+                <div class="field-control @(changeStatus ? "" : "disabled")">
+                    <select class="form-control" @bind="status" disabled="@(!changeStatus)">
+                        @foreach (var s in EquipmentStatuses.All)
+                        {
+                            <option value="@s.Key">@s.Value</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" @onclick="HandleSubmit" disabled="@(isSaving || (!changeWorkplace && !changeEmployee && !changeStatus))">
+                @(isSaving ? "Применение..." : "Применить изменения")
+            </button>
+            <button type="button" class="btn btn-secondary" @onclick="OnClose">
+                Отмена
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<Guid> SelectedIds { get; set; } = new();
+    [Parameter] public int SelectedCount { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool isSaving = false;
+    private List<Workplace> workplaces = new();
+    private List<Employee> employees = new();
+
+    private bool changeWorkplace = false;
+    private Guid? workplaceId = null;
+    
+    private bool changeEmployee = false;
+    private Guid? employeeId = null;
+    
+    private bool changeStatus = false;
+    private string status = "active";
+
+    protected override async Task OnInitializedAsync()
+    {
+        workplaces = await WorkplaceService.GetAllAsync();
+        employees = await EmployeeService.GetAllAsync();
+    }
+
+    private async Task HandleSubmit()
+    {
+        isSaving = true;
+        try
+        {
+            await EquipmentService.UpdateBulkAsync(
+                SelectedIds, 
+                changeWorkplace, workplaceId, 
+                changeEmployee, employeeId, 
+                changeStatus, status);
+                
+            await OnSaved.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in bulk update: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}
+
+<style>
+    .modal-hint {
+        color: var(--slate-500);
+        font-size: 0.875rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .bulk-field {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: var(--slate-50);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--slate-200);
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        cursor: pointer;
+        font-weight: 500;
+        color: var(--slate-900);
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        width: 1.125rem;
+        height: 1.125rem;
+        cursor: pointer;
+    }
+
+    .field-control.disabled {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    .modal-body {
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+</style>
+

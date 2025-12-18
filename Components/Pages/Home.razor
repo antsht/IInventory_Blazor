@@ -19,6 +19,34 @@
     </button>
 </div>
 
+@if (selectedIds.Any())
+{
+    <div class="bulk-actions-bar">
+        <div class="bulk-actions-info">
+            Выбрано объектов: @selectedIds.Count
+        </div>
+        <div class="bulk-actions-btns">
+            <button class="btn btn-white" @onclick="OpenBulkEdit">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem;">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Массовое редактирование
+            </button>
+            <button class="btn btn-outline-white" @onclick="DeleteBulk">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem;">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Удалить выбранные
+            </button>
+            <button class="btn btn-link" style="color: white; opacity: 0.8;" @onclick="() => selectedIds.Clear()">
+                Отмена
+            </button>
+        </div>
+    </div>
+}
+
 <div class="card">
     <div class="filters">
         <input type="text" 
@@ -53,6 +81,9 @@
             <table class="data-table sortable-table">
                 <thead>
                     <tr>
+                        <th class="checkbox-col">
+                            <input type="checkbox" checked="@IsAllSelected()" @onchange="e => ToggleAll((bool)(e.Value ?? false))" />
+                        </th>
                         <th class="sortable @GetSortClass("Name")" @onclick='() => SortBy("Name")'>
                             Название
                             @RenderSortIcon("Name")
@@ -89,14 +120,17 @@
                     @if (!equipment.Any())
                     {
                         <tr>
-                            <td colspan="9" class="empty-message">Оборудование не найдено</td>
+                            <td colspan="10" class="empty-message">Оборудование не найдено</td>
                         </tr>
                     }
                     else
                     {
                         @foreach (var item in GetSortedEquipment())
                         {
-                            <tr>
+                            <tr class="@(selectedIds.Contains(item.Id) ? "selected" : "")">
+                                <td class="checkbox-col">
+                                    <input type="checkbox" checked="@selectedIds.Contains(item.Id)" @onchange="() => ToggleItem(item.Id)" />
+                                </td>
                                 <td>@item.Name</td>
                                 <td>@GetTypeName(item.Type)</td>
                                 <td class="barcode">@item.Barcode</td>
@@ -180,6 +214,27 @@
         OnCancel="CancelSplit" />
 }
 
+@if (showBulkEdit)
+{
+    <BulkEditModal 
+        SelectedIds="selectedIds.ToList()" 
+        SelectedCount="selectedIds.Count"
+        OnClose="() => showBulkEdit = false"
+        OnSaved="OnBulkSaved" />
+}
+
+@if (showBulkDeleteConfirm)
+{
+    <ConfirmModal 
+        Title="Массовое удаление"
+        Message="@($"Вы уверены, что хотите удалить {selectedIds.Count} объектов? Это действие нельзя отменить.")"
+        ConfirmText="Удалить выбранные"
+        CancelText="Отмена"
+        Variant="ConfirmModal.ConfirmVariant.Danger"
+        OnConfirm="ConfirmBulkDelete"
+        OnCancel="CancelBulkDelete" />
+}
+
 @implements IDisposable
 
 @code {
@@ -201,6 +256,11 @@
     private Equipment? equipmentToDelete = null;
     private bool showSplitConfirm = false;
     private Equipment? equipmentToSplit = null;
+    
+    // Bulk operations state
+    private HashSet<Guid> selectedIds = new();
+    private bool showBulkEdit = false;
+    private bool showBulkDeleteConfirm = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -253,7 +313,66 @@
     {
         showForm = false;
         editingEquipment = null;
+        selectedIds.Clear();
         await LoadEquipment();
+    }
+
+    private void ToggleItem(Guid id)
+    {
+        if (selectedIds.Contains(id))
+            selectedIds.Remove(id);
+        else
+            selectedIds.Add(id);
+    }
+
+    private void ToggleAll(bool checkedValue)
+    {
+        if (checkedValue)
+        {
+            var visibleItems = GetSortedEquipment();
+            foreach (var item in visibleItems)
+                selectedIds.Add(item.Id);
+        }
+        else
+        {
+            selectedIds.Clear();
+        }
+    }
+
+    private bool IsAllSelected()
+    {
+        var visibleItems = GetSortedEquipment().ToList();
+        return visibleItems.Any() && visibleItems.All(i => selectedIds.Contains(i.Id));
+    }
+
+    private void OpenBulkEdit()
+    {
+        showBulkEdit = true;
+    }
+
+    private async Task OnBulkSaved()
+    {
+        showBulkEdit = false;
+        selectedIds.Clear();
+        await LoadEquipment();
+    }
+
+    private void DeleteBulk()
+    {
+        showBulkDeleteConfirm = true;
+    }
+
+    private async Task ConfirmBulkDelete()
+    {
+        await EquipmentService.DeleteBulkAsync(selectedIds.ToList());
+        showBulkDeleteConfirm = false;
+        selectedIds.Clear();
+        await LoadEquipment();
+    }
+
+    private void CancelBulkDelete()
+    {
+        showBulkDeleteConfirm = false;
     }
 
     private void DeleteEquipment(Equipment item)

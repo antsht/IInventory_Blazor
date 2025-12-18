@@ -138,7 +138,36 @@ public class EquipmentService(IDbContextFactory<ApplicationDbContext> contextFac
 
         context.Equipment.Add(duplicate);
         await context.SaveChangesAsync();
-
         return duplicate;
+    }
+
+    public async Task UpdateBulkAsync(List<Guid> ids, bool changeWorkplace, Guid? workplaceId, bool changeEmployee, Guid? employeeId, bool changeStatus, string? status)
+    {
+        using var context = await _contextFactory.CreateDbContextAsync();
+        var items = await context.Equipment
+            .Where(e => ids.Contains(e.Id))
+            .ToListAsync();
+
+        foreach (var item in items)
+        {
+            if (changeWorkplace) item.WorkplaceId = workplaceId;
+            if (changeEmployee) item.EmployeeId = employeeId;
+            if (changeStatus && !string.IsNullOrEmpty(status)) item.Status = status;
+
+            item.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    public async Task DeleteBulkAsync(List<Guid> ids)
+    {
+        using var context = await _contextFactory.CreateDbContextAsync();
+        var items = await context.Equipment
+            .Where(e => ids.Contains(e.Id))
+            .ToListAsync();
+
+        context.Equipment.RemoveRange(items);
+        await context.SaveChangesAsync();
     }
 }
